@@ -1,0 +1,6 @@
+venv
+arquivos_publicos
+arquivos_recebidos
+dist
+build
+*.spec
