@@ -3,94 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SwiftSend</title>
+    <title>SwiftSend — Sessão</title>
     <link rel="stylesheet" href="/static/css/app.css">
     <link rel="icon" href="/static/icon.png" type="image/png">
 </head>
 <body class="flex flex-col h-screen">
     <header class="site-header">
-        <div class="flex items-center gap-2 text-brand">
-            <span class="material-symbols-outlined text-3xl" aria-hidden="true">cloud_sync</span>
-            <h1 class="text-xl font-medium tracking-tight">SwiftSend</h1>
-        </div>
+        <a class="brand-mark" href="/">
+            <img src="/static/icon.png" width="32" height="32" alt="">
+            <span class="brand-name">SwiftSend</span>
+        </a>
         {% if is_desktop %}
-        <div class="badge-url">
-            <span class="material-symbols-outlined text-lg" aria-hidden="true">wifi</span>
-            {{ base_url }}
+        <div class="live-pill" title="{{ base_url }}">
+            <span class="live-dot" aria-hidden="true"></span>
+            Sessão ativa na rede
         </div>
         {% endif %}
     </header>
 
     <main class="flex-1 overflow-auto p-4 md:p-8">
         <div class="max-w-5xl mx-auto page-enter">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="google-card p-6 flex flex-col justify-between min-h-64">
+            <div class="mb-6">
+                <p class="eyebrow mb-2">
+                    <span class="material-symbols-outlined text-sm" aria-hidden="true">sensors</span>
+                    Host
+                </p>
+                <h1 class="text-3xl font-bold tracking-tight mb-2">Servidor Ativo</h1>
+                <p class="text-muted">Compartilhe o link ou o QR. Quem estiver no mesmo Wi‑Fi entra sem conta nem nuvem.</p>
+            </div>
+
+            <div class="session-hero mb-6">
+                <div class="panel p-6 flex flex-col gap-5">
                     <div>
-                        <h2 class="text-2xl font-normal mb-2">Servidor Ativo</h2>
-                        <p class="text-gray-500 mb-6">Seus arquivos estão acessíveis na rede local.</p>
-                        <div class="bg-gray-100 p-4 rounded-xl flex items-center justify-between">
-                            <code class="text-lg text-gray-700 select-all">{{ base_url }}</code>
-                            <button type="button" class="copy-btn" title="Copiar" data-copy="{{ base_url }}">
+                        <p class="text-xs uppercase tracking-wide font-semibold text-muted-soft mb-2">Link da rede local</p>
+                        <div class="session-url">
+                            <code class="select-all" id="sessionUrl">{{ base_url }}</code>
+                            <button type="button" class="copy-btn" title="Copiar link" data-copy="{{ base_url }}">
                                 <span class="material-symbols-outlined" aria-hidden="true">content_copy</span>
                             </button>
                         </div>
                     </div>
-                    <div class="flex gap-2 mt-4">
-                        <a href="/upload_manager" class="btn-tonal flex-1">
-                            <span class="material-symbols-outlined" aria-hidden="true">folder_open</span>
-                            Abrir Pasta Recebidos
+                    <div class="session-actions">
+                        <a href="/upload_manager" class="btn-tonal">
+                            <span class="material-symbols-outlined" aria-hidden="true">inbox</span>
+                            Abrir Recebidos
                         </a>
-                        <a href="/public_manager" class="btn-tonal flex-1">
-                            <span class="material-symbols-outlined" aria-hidden="true">public</span>
+                        <a href="/public_manager" class="btn-tonal">
+                            <span class="material-symbols-outlined" aria-hidden="true">folder_shared</span>
                             Gerenciar Públicos
                         </a>
                     </div>
                 </div>
 
-                <div class="google-card p-6 flex flex-col justify-center items-center min-h-64 text-center">
-                    <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4">
-                        <span class="material-symbols-outlined text-3xl" aria-hidden="true">download</span>
-                    </div>
-                    <h3 class="text-4xl font-normal text-gray-800">{{ received_count }}</h3>
-                    <p class="text-gray-500">Arquivos Recebidos</p>
-                    <p class="text-sm text-gray-400 mt-2">Salvo em: {{ upload_path }}</p>
+                <div class="panel qr-card">
+                    <div class="qr-frame" id="qrcode" data-qr="{{ base_url }}" aria-label="QR Code do link"></div>
+                    <p class="text-sm text-muted mb-1">Escaneie no celular</p>
+                    <p class="text-xs text-muted-soft mono">{{ base_url }}</p>
                 </div>
             </div>
 
-            <div class="mt-8">
-                <h3 class="text-lg font-medium mb-4 ml-1">Como usar</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="p-4 rounded-2xl bg-white border border-gray-100">
-                        <div class="text-blue-600 font-bold mb-1">Passo 1</div>
-                        <p class="text-gray-600 text-sm">Copie o endereço IP acima.</p>
+            <div class="session-stats mb-8">
+                <div class="panel stat-block">
+                    <p class="text-xs uppercase tracking-wide font-semibold text-muted-soft">Recebidos</p>
+                    <div class="stat-value">{{ received_count }}</div>
+                    <p class="stat-label">arquivos na pasta de upload</p>
+                    <p class="stat-path">{{ upload_path }}</p>
+                </div>
+                <div class="panel-soft p-6 flex flex-col justify-center gap-2">
+                    <p class="eyebrow">Fluxo</p>
+                    <p class="text-lg font-semibold tracking-tight mb-1">Visitantes baixam de Públicos e enviam para Recebidos.</p>
+                    <p class="text-sm text-muted">Sem autenticação, sem nuvem — só a LAN. Mantenha o app aberto enquanto a sessão estiver em uso.</p>
+                </div>
+            </div>
+
+            {% if received_count == 0 %}
+            <div class="mb-4">
+                <h2 class="text-lg font-semibold mb-3">Como começar</h2>
+                <div class="howto-list">
+                    <div class="howto-item">
+                        <span class="howto-step">1</span>
+                        <div>
+                            <p class="font-semibold mb-1">Copie o link ou mostre o QR</p>
+                            <p class="text-sm text-muted">Quem estiver na mesma rede Wi‑Fi abre no navegador.</p>
+                        </div>
                     </div>
-                    <div class="p-4 rounded-2xl bg-white border border-gray-100">
-                        <div class="text-blue-600 font-bold mb-1">Passo 2</div>
-                        <p class="text-gray-600 text-sm">Envie para quem estiver na mesma rede Wi-Fi.</p>
+                    <div class="howto-item">
+                        <span class="howto-step">2</span>
+                        <div>
+                            <p class="font-semibold mb-1">Coloque arquivos em Públicos</p>
+                            <p class="text-sm text-muted">Use “Gerenciar Públicos” para disponibilizar downloads.</p>
+                        </div>
                     </div>
-                    <div class="p-4 rounded-2xl bg-white border border-gray-100">
-                        <div class="text-blue-600 font-bold mb-1">Passo 3</div>
-                        <p class="text-gray-600 text-sm">Eles podem baixar seus arquivos públicos ou enviar arquivos para você.</p>
+                    <div class="howto-item">
+                        <span class="howto-step">3</span>
+                        <div>
+                            <p class="font-semibold mb-1">Receba envios em Recebidos</p>
+                            <p class="text-sm text-muted">Uploads dos visitantes aparecem na pasta local do host.</p>
+                        </div>
                     </div>
                 </div>
             </div>
+            {% endif %}
         </div>
     </main>
-    <script>
-      document.querySelectorAll("[data-copy]").forEach(function (btn) {
-        btn.addEventListener("click", function () {
-          var text = btn.getAttribute("data-copy") || "";
-          navigator.clipboard.writeText(text).then(function () {
-            btn.classList.add("copied");
-            var icon = btn.querySelector(".material-symbols-outlined");
-            if (icon) icon.textContent = "check";
-            setTimeout(function () {
-              btn.classList.remove("copied");
-              if (icon) icon.textContent = "content_copy";
-            }, 1500);
-          });
-        });
-      });
-    </script>
+    <script src="/static/js/qrcode.js"></script>
+    <script src="/static/js/app.js"></script>
 </body>
 </html>

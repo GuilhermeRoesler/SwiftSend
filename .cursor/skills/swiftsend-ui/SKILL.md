@@ -2,7 +2,7 @@
 name: swiftsend-ui
 description: >-
   UI compartilhada do SwiftSend em shared/ (templates Jinja/Fluid, CSS/JS/fonts
-  locais). Use ao editar dashboard, home, browse, upload, estilos Material 3,
+  locais). Use ao editar dashboard, home, browse, upload, estilos de produto,
   assets estáticos ou textos da interface.
 ---
 
@@ -19,8 +19,10 @@ shared/
 │   └── upload.html      # envio
 ├── static/
 │   ├── css/app.css
+│   ├── js/app.js        # copy, QR, ícones por tipo
 │   ├── js/upload.js
-│   ├── fonts/           # Roboto + Material Symbols
+│   ├── js/qrcode.js     # QR local (sem CDN)
+│   ├── fonts/           # Sora + JetBrains Mono + Material Symbols
 │   └── icon.png
 ```
 
@@ -29,19 +31,19 @@ Demo estática (GitHub Pages): `python demo/build.py` → `demo/dist/` (template
 ## Convenções
 
 - Idioma da UI: **português** (`lang="pt-br"`).
-- Visual: Material Design 3, assets **locais** (sem CDN obrigatório).
+- Visual: identidade própria (Sora + JetBrains Mono, azul/teal sobre ink), assets **locais** (sem CDN obrigatório).
 - Templates compatíveis com **Jinja2 e Fluid** — não introduzir filtros/tags só de um motor sem equivalente no outro.
 - Identificadores de rotas/API em inglês (`/api/upload`, `/browse`); cópia visível em PT.
-- Upload: `upload.js` (XHR + progresso + drag-and-drop) — manter contrato com `POST /api/upload`.
+- Upload: `upload.js` (XHR + progresso com velocidade/ETA + drag-and-drop) — manter contrato com `POST /api/upload`.
 
 ## Páginas
 
 | Template | Audiência | Função |
 |----------|-----------|--------|
-| `dashboard.html` | Host | Link LAN, contagem, abrir pastas, passos |
-| `home.html` | Visitante | Entrada Baixar / Enviar |
-| `browse.html` | Visitante | Tabela nome/tamanho/download |
-| `upload.html` | Visitante | Drop zone + progresso |
+| `dashboard.html` | Host | Sessão ativa, link + QR, contagem, pastas; “Como começar” só se `received_count == 0` |
+| `home.html` | Visitante | Hero de marca + Baixar / Enviar |
+| `browse.html` | Visitante | Lista rica com ícone por tipo + download |
+| `upload.html` | Visitante | Drop zone + progresso + sucesso |
 
 ## Ao editar
 

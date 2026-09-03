@@ -31,14 +31,16 @@ DEMO_BANNER = """
 </div>
 <style>
   .demo-banner {
-    background: #e8f0fe;
-    color: #1a73e8;
+    background: #0b1220;
+    color: #d7e3ff;
+    font-family: "Sora", system-ui, sans-serif;
     font-size: 0.875rem;
-    padding: 0.6rem 1rem;
+    padding: 0.65rem 1rem;
     text-align: center;
-    border-bottom: 1px solid #d2e3fc;
+    border-bottom: 1px solid #1a2436;
   }
-  .demo-banner a { color: inherit; font-weight: 500; }
+  .demo-banner a { color: #9ec0ff; font-weight: 600; text-decoration: none; }
+  .demo-banner a:hover { text-decoration: underline; }
   .demo-nav { margin-left: 0.5rem; white-space: nowrap; }
   body.flex.flex-col.h-screen { min-height: 100vh; }
 </style>
@@ -51,7 +53,7 @@ DEMO_TOAST_SCRIPT = """
     var el = document.createElement("div");
     el.textContent = msg;
     el.setAttribute("role", "status");
-    el.style.cssText = "position:fixed;bottom:1.25rem;left:50%;transform:translateX(-50%);background:#202124;color:#fff;padding:0.75rem 1.25rem;border-radius:999px;font-size:0.875rem;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.2);";
+    el.style.cssText = "position:fixed;bottom:1.25rem;left:50%;transform:translateX(-50%);background:#0b1220;color:#fff;padding:0.75rem 1.25rem;border-radius:999px;font-size:0.875rem;z-index:9999;font-family:Sora,system-ui,sans-serif;";
     document.body.appendChild(el);
     setTimeout(function () { el.remove(); }, 2800);
   }
