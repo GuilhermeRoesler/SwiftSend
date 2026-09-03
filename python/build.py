@@ -42,10 +42,10 @@ def build():
         f"--add-data={add_data}",
     ]
 
-    icon = REPO / "icon.png"
     # PyInstaller prefere .ico no Windows; png pode ser ignorado
-    if (REPO / "icon.ico").exists():
-        args.append(f"--icon={REPO / 'icon.ico'}")
+    icon = REPO / "icon.ico"
+    if icon.exists():
+        args.append(f"--icon={icon}")
 
     print("Gerando executável... (isso pode levar alguns minutos)")
     print(f"Incluindo shared: {SHARED}")

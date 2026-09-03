@@ -82,10 +82,10 @@ internal static class AppPaths
         foreach (var unit in units)
         {
             if (size < 1024)
-                return $"{size:0.0} {unit}";
+                return string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0:0.0} {1}", size, unit);
             size /= 1024;
         }
 
-        return $"{size:0.0} PB";
+        return string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0:0.0} PB", size);
     }
 }

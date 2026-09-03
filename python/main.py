@@ -6,7 +6,6 @@ import threading
 from datetime import datetime
 from pathlib import Path
 
-import webview
 from flask import Flask, jsonify, redirect, render_template, request, send_from_directory, url_for
 from werkzeug.utils import secure_filename
 
@@ -154,6 +153,8 @@ def start_server():
 
 
 if __name__ == "__main__":
+    import webview
+
     t = threading.Thread(target=start_server, daemon=True)
     t.start()
 
