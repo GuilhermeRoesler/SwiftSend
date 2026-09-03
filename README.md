@@ -121,6 +121,18 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
+## Demo (GitHub Pages)
+
+Demo **estática** da UI (sem transferência real), gerada a partir de `shared/`:
+
+```powershell
+pip install jinja2
+python demo/build.py
+# → demo/dist/
+```
+
+Push em `main` (alterações em `shared/` ou `demo/`) dispara o deploy Pages. No repositório: **Settings → Pages → Source: GitHub Actions**.
+
 ## Licença
 
 Uso pessoal e educacional.

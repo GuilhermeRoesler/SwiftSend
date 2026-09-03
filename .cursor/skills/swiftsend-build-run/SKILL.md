@@ -70,3 +70,4 @@ dotnet publish csharp/SwiftSend/SwiftSend.csproj -c Release -p:PublishProfile=Re
 - C# = Windows only; Python = multiplataforma (releases win/linux/mac).
 - PyInstaller: binário grande / possíveis falsos positivos de antivírus.
 - CD: tag `v*` → Python (`windows-amd64`, `linux-amd64`, `macos-arm64`, `macos-amd64`) + zips C# (`fdd` / `scd` / `r2r`).
+- Demo Pages: `python demo/build.py` + workflow `.github/workflows/pages.yml` (UI estática a partir de `shared/`).

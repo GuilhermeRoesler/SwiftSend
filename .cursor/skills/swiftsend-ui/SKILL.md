@@ -24,6 +24,8 @@ shared/
 │   └── icon.png
 ```
 
+Demo estática (GitHub Pages): `python demo/build.py` → `demo/dist/` (templates com dados mock + `upload-demo.js`). Não altera o contrato das backends.
+
 ## Convenções
 
 - Idioma da UI: **português** (`lang="pt-br"`).
