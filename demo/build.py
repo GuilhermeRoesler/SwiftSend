@@ -127,7 +127,9 @@ def copy_static() -> None:
     css = dest / "css" / "app.css"
     text = css.read_text(encoding="utf-8")
     # Paths absolutos quebram em project Pages (/repo/...).
-    css.write_text(text.replace('url("/static/fonts/', 'url("../fonts/'), encoding="utf-8")
+    css.write_text(
+        text.replace('url("/static/fonts/', 'url("../fonts/'), encoding="utf-8"
+    )
 
     demo_js = ROOT / "upload-demo.js"
     shutil.copy2(demo_js, dest / "js" / "upload-demo.js")

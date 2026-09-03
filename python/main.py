@@ -129,9 +129,7 @@ def force_windows_taskbar_icon(window, icon_path: str | None) -> None:
         wm_seticon = 0x0080
 
         def load(size: int) -> int:
-            return int(
-                user32.LoadImageW(None, icon_path, image_icon, size, size, lr_loadfromfile)
-            )
+            return int(user32.LoadImageW(None, icon_path, image_icon, size, size, lr_loadfromfile))
 
         small = load(16)
         big = load(32)
