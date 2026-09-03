@@ -40,10 +40,10 @@ Demo estática (GitHub Pages): `python demo/build.py` → `demo/dist/` (template
 
 | Template | Audiência | Função |
 |----------|-----------|--------|
-| `dashboard.html` | Host | Sessão ativa, link + QR, contagem, pastas; “Como começar” só se `received_count == 0` |
-| `home.html` | Visitante | Hero de marca + Baixar / Enviar |
-| `browse.html` | Visitante | Lista rica com ícone por tipo + download |
-| `upload.html` | Visitante | Drop zone + progresso + sucesso |
+| `dashboard.html` | Host | Cockpit: link+QR dominantes, métrica densa, howto compacto se `received_count == 0` |
+| `home.html` | Visitante | Hero de marca (wordmark) + cena LAN + Baixar / Enviar |
+| `browse.html` | Visitante | Lista flat com ícone por tipo + download |
+| `upload.html` | Visitante | Drop zone + transfer meter (%, velocidade, ETA) + sucesso |
 
 ## Ao editar
 

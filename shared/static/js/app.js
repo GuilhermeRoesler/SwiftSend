@@ -106,13 +106,14 @@
       var qr = qrcode(0, "M");
       qr.addData(url);
       qr.make();
-      el.innerHTML = qr.createSvgTag(4, 0);
+      el.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
       var svg = el.querySelector("svg");
       if (svg) {
-        svg.style.width = "100%";
-        svg.style.height = "100%";
         svg.setAttribute("width", "100%");
         svg.setAttribute("height", "100%");
+        svg.style.width = "100%";
+        svg.style.height = "100%";
+        svg.style.display = "block";
       }
     } catch (e) {
       el.innerHTML =

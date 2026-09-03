@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="/static/css/app.css">
     <link rel="icon" href="/static/icon.png" type="image/png">
 </head>
-<body class="flex flex-col h-screen">
+<body class="page-host flex flex-col h-screen">
     <header class="site-header">
         <a class="brand-mark" href="/">
             <img src="/static/icon.png" width="32" height="32" alt="">
@@ -16,32 +16,32 @@
         {% if is_desktop %}
         <div class="live-pill" title="{{ base_url }}">
             <span class="live-dot" aria-hidden="true"></span>
-            Sessão ativa na rede
+            Sessão ativa
         </div>
         {% endif %}
     </header>
 
-    <main class="flex-1 overflow-auto p-4 md:p-8">
-        <div class="max-w-5xl mx-auto page-enter">
-            <div class="mb-6">
-                <p class="eyebrow mb-2">
-                    <span class="material-symbols-outlined text-sm" aria-hidden="true">sensors</span>
-                    Host
-                </p>
-                <h1 class="text-3xl font-bold tracking-tight mb-2">Servidor Ativo</h1>
-                <p class="text-muted">Compartilhe o link ou o QR. Quem estiver no mesmo Wi‑Fi entra sem conta nem nuvem.</p>
+    <main class="flex-1 overflow-auto">
+        <div class="cockpit page-enter">
+            <div class="cockpit-head">
+                <div>
+                    <p class="eyebrow mb-2">
+                        <span class="material-symbols-outlined text-sm" aria-hidden="true">sensors</span>
+                        Host
+                    </p>
+                    <h1 class="cockpit-title">Servidor ativo</h1>
+                    <p class="cockpit-sub">Quem estiver no mesmo Wi‑Fi entra pelo link ou QR — sem conta.</p>
+                </div>
             </div>
 
-            <div class="session-hero mb-6">
-                <div class="panel p-6 flex flex-col gap-5">
-                    <div>
-                        <p class="text-xs uppercase tracking-wide font-semibold text-muted-soft mb-2">Link da rede local</p>
-                        <div class="session-url">
-                            <code class="select-all" id="sessionUrl">{{ base_url }}</code>
-                            <button type="button" class="copy-btn" title="Copiar link" data-copy="{{ base_url }}">
-                                <span class="material-symbols-outlined" aria-hidden="true">content_copy</span>
-                            </button>
-                        </div>
+            <section class="cockpit-core" aria-label="Compartilhar sessão">
+                <div class="share-stage">
+                    <p class="field-label">Link da rede local</p>
+                    <div class="session-url session-url--hero">
+                        <code class="select-all" id="sessionUrl">{{ base_url }}</code>
+                        <button type="button" class="copy-btn" title="Copiar link" data-copy="{{ base_url }}">
+                            <span class="material-symbols-outlined" aria-hidden="true">content_copy</span>
+                        </button>
                     </div>
                     <div class="session-actions">
                         <a href="/upload_manager" class="btn-tonal">
@@ -55,54 +55,27 @@
                     </div>
                 </div>
 
-                <div class="panel qr-card">
-                    <div class="qr-frame" id="qrcode" data-qr="{{ base_url }}" aria-label="QR Code do link"></div>
-                    <p class="text-sm text-muted mb-1">Escaneie no celular</p>
-                    <p class="text-xs text-muted-soft mono">{{ base_url }}</p>
+                <div class="qr-stage">
+                    <div class="qr-frame qr-frame--lg" id="qrcode" data-qr="{{ base_url }}" aria-label="QR Code do link"></div>
+                    <p class="qr-caption">Escaneie no celular</p>
                 </div>
-            </div>
+            </section>
 
-            <div class="session-stats mb-8">
-                <div class="panel stat-block">
-                    <p class="text-xs uppercase tracking-wide font-semibold text-muted-soft">Recebidos</p>
-                    <div class="stat-value">{{ received_count }}</div>
-                    <p class="stat-label">arquivos na pasta de upload</p>
-                    <p class="stat-path">{{ upload_path }}</p>
+            <section class="cockpit-metrics" aria-label="Resumo">
+                <div class="metric">
+                    <span class="metric-value">{{ received_count }}</span>
+                    <span class="metric-label">recebidos</span>
+                    <span class="metric-path mono">{{ upload_path }}</span>
                 </div>
-                <div class="panel-soft p-6 flex flex-col justify-center gap-2">
-                    <p class="eyebrow">Fluxo</p>
-                    <p class="text-lg font-semibold tracking-tight mb-1">Visitantes baixam de Públicos e enviam para Recebidos.</p>
-                    <p class="text-sm text-muted">Sem autenticação, sem nuvem — só a LAN. Mantenha o app aberto enquanto a sessão estiver em uso.</p>
-                </div>
-            </div>
+                <p class="cockpit-hint">Visitantes baixam de <strong>Públicos</strong> e enviam para <strong>Recebidos</strong>. Mantenha o app aberto.</p>
+            </section>
 
             {% if received_count == 0 %}
-            <div class="mb-4">
-                <h2 class="text-lg font-semibold mb-3">Como começar</h2>
-                <div class="howto-list">
-                    <div class="howto-item">
-                        <span class="howto-step">1</span>
-                        <div>
-                            <p class="font-semibold mb-1">Copie o link ou mostre o QR</p>
-                            <p class="text-sm text-muted">Quem estiver na mesma rede Wi‑Fi abre no navegador.</p>
-                        </div>
-                    </div>
-                    <div class="howto-item">
-                        <span class="howto-step">2</span>
-                        <div>
-                            <p class="font-semibold mb-1">Coloque arquivos em Públicos</p>
-                            <p class="text-sm text-muted">Use “Gerenciar Públicos” para disponibilizar downloads.</p>
-                        </div>
-                    </div>
-                    <div class="howto-item">
-                        <span class="howto-step">3</span>
-                        <div>
-                            <p class="font-semibold mb-1">Receba envios em Recebidos</p>
-                            <p class="text-sm text-muted">Uploads dos visitantes aparecem na pasta local do host.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <ol class="howto-compact">
+                <li><span class="howto-num">1</span> Copie o link ou mostre o QR</li>
+                <li><span class="howto-num">2</span> Coloque arquivos em Públicos</li>
+                <li><span class="howto-num">3</span> Receba envios em Recebidos</li>
+            </ol>
             {% endif %}
         </div>
     </main>

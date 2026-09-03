@@ -7,12 +7,8 @@
     <link rel="stylesheet" href="/static/css/app.css">
     <link rel="icon" href="/static/icon.png" type="image/png">
 </head>
-<body class="flex flex-col h-screen">
-    <header class="site-header">
-        <a class="brand-mark" href="/">
-            <img src="/static/icon.png" width="32" height="32" alt="">
-            <span class="brand-name">SwiftSend</span>
-        </a>
+<body class="page-home flex flex-col h-screen">
+    <header class="site-header site-header--minimal">
         <span class="live-pill">
             <span class="live-dot" aria-hidden="true"></span>
             Rede local
@@ -20,15 +16,24 @@
     </header>
 
     <main class="flex-1 overflow-auto">
-        <div class="home-shell page-enter">
-            <div class="home-hero">
-                <div class="brand-lockup">
-                    <img src="/static/icon.png" width="52" height="52" alt="">
-                    <span class="text-xl font-bold tracking-tight">SwiftSend</span>
+        <div class="home-stage page-enter">
+            <div class="lan-scene" aria-hidden="true">
+                <div class="lan-device lan-device--host">
+                    <span class="lan-device-screen"></span>
                 </div>
-                <h2>Compartilhamento Local</h2>
-                <p>Arquivos pesados na mesma rede Wi‑Fi — direto entre dispositivos, sem nuvem.</p>
+                <div class="lan-beam">
+                    <span class="lan-packet"></span>
+                    <span class="lan-packet lan-packet--delay"></span>
+                    <span class="lan-packet lan-packet--delay2"></span>
+                </div>
+                <div class="lan-device lan-device--phone">
+                    <span class="lan-device-screen"></span>
+                </div>
             </div>
+
+            <p class="home-kicker">Transferência na LAN</p>
+            <h1 class="brand-hero">SwiftSend</h1>
+            <p class="home-tagline">Arquivos pesados no mesmo Wi‑Fi — direto entre dispositivos, sem nuvem.</p>
 
             <div class="action-stack">
                 <a href="/browse" class="action-primary">

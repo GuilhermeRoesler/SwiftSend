@@ -7,6 +7,8 @@
   const progressContainer = document.getElementById("progressContainer");
   const progressPct = document.getElementById("progressPct");
   const progressStats = document.getElementById("progressStats");
+  const progressSpeed = document.getElementById("progressSpeed");
+  const progressEta = document.getElementById("progressEta");
   const statusText = document.getElementById("statusText");
   const submitBtn = document.getElementById("submitBtn");
   const dropZone = document.getElementById("dropZone");
@@ -33,6 +35,16 @@
     var m = Math.floor(seconds / 60);
     var s = Math.round(seconds % 60);
     return m + "m " + s + "s";
+  }
+
+  function setMeter(pct, speedText, etaText, bytesText) {
+    if (progressPct) progressPct.textContent = pct;
+    if (progressSpeed) progressSpeed.textContent = speedText;
+    if (progressEta) progressEta.textContent = "ETA " + etaText;
+    if (progressStats) {
+      progressStats.textContent = speedText + " · ETA " + etaText;
+    }
+    if (statusText && bytesText != null) statusText.textContent = bytesText;
   }
 
   function updateFileName() {
@@ -88,9 +100,7 @@
     progressContainer.classList.remove("hidden");
     statusText.classList.remove("hidden");
     statusText.classList.remove("text-success", "text-danger");
-    statusText.textContent = "Iniciando envio…";
-    if (progressPct) progressPct.textContent = "0%";
-    if (progressStats) progressStats.textContent = "—";
+    setMeter("0%", "—", "—", "Iniciando envio…");
     progressBar.style.width = "0%";
     submitBtn.disabled = true;
     submitBtn.classList.add("opacity-50", "cursor-not-allowed");
@@ -100,7 +110,6 @@
       var now = Date.now();
       var percent = (e.loaded / e.total) * 100;
       progressBar.style.width = percent + "%";
-      if (progressPct) progressPct.textContent = Math.round(percent) + "%";
 
       var dt = (now - lastAt) / 1000;
       var speed = dt > 0 ? (e.loaded - lastLoaded) / dt : 0;
@@ -113,19 +122,18 @@
       var remaining = avgSpeed > 0 ? (e.total - e.loaded) / avgSpeed : NaN;
       var showSpeed = speed > 0 ? speed : avgSpeed;
 
-      if (progressStats) {
-        progressStats.textContent =
-          formatBytes(showSpeed) + "/s · ETA " + formatEta(remaining);
-      }
-      statusText.textContent =
-        formatBytes(e.loaded) + " de " + formatBytes(e.total);
+      setMeter(
+        Math.round(percent) + "%",
+        formatBytes(showSpeed) + "/s",
+        formatEta(remaining),
+        formatBytes(e.loaded) + " de " + formatBytes(e.total)
+      );
     };
 
     xhr.onload = function () {
       if (xhr.status === 200) {
         progressBar.style.width = "100%";
-        if (progressPct) progressPct.textContent = "100%";
-        statusText.textContent = "";
+        setMeter("100%", "concluído", "0s", "");
         statusText.classList.add("text-success");
         if (successPanel) successPanel.classList.remove("hidden");
         setTimeout(function () {

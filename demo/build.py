@@ -27,6 +27,10 @@ DEMO_BANNER = """
     <a href="index.html">Visitante</a>
     ·
     <a href="dashboard.html">Host</a>
+    ·
+    <a href="browse.html">Baixar</a>
+    ·
+    <a href="upload.html">Enviar</a>
   </span>
 </div>
 <style>
@@ -38,11 +42,40 @@ DEMO_BANNER = """
     padding: 0.65rem 1rem;
     text-align: center;
     border-bottom: 1px solid #1a2436;
+    position: relative;
+    z-index: 20;
   }
   .demo-banner a { color: #9ec0ff; font-weight: 600; text-decoration: none; }
   .demo-banner a:hover { text-decoration: underline; }
   .demo-nav { margin-left: 0.5rem; white-space: nowrap; }
   body.flex.flex-col.h-screen { min-height: 100vh; }
+  .demo-window {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    max-width: 72rem;
+    width: 100%;
+    margin: 1.25rem auto 2rem;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid rgba(11, 18, 32, 0.14);
+    box-shadow: 0 28px 60px rgba(11, 18, 32, 0.22);
+    background: #e8eef6;
+  }
+  .demo-window .site-header {
+    border-radius: 0;
+    border-bottom: 1px solid #d8dee8;
+  }
+  body.page-host {
+    background:
+      radial-gradient(ellipse 70% 50% at 50% 0%, rgba(21, 101, 239, 0.18), transparent 55%),
+      #c5d0e0 !important;
+  }
+  body.page-host.flex.flex-col.h-screen {
+    height: auto;
+    min-height: 100vh;
+  }
 </style>
 """
 
@@ -86,14 +119,29 @@ def rewrite_asset_paths(html: str) -> str:
     return html
 
 
-def inject_demo_chrome(html: str) -> str:
-    html = html.replace("<body", "<body", 1)
+def inject_demo_chrome(html: str, *, desktop_frame: bool = False) -> str:
     html = re.sub(
         r"(<body[^>]*>)",
         r"\1" + DEMO_BANNER,
         html,
         count=1,
     )
+
+    if desktop_frame:
+        # Abre moldura após o <style> do banner; fecha antes dos scripts.
+        html = re.sub(
+            r"(</style>)",
+            r"\1\n<div class=\"demo-window\">",
+            html,
+            count=1,
+        )
+        html = re.sub(
+            r"(<script\b)",
+            r"</div>\n\1",
+            html,
+            count=1,
+        )
+
     if "</body>" in html:
         html = html.replace("</body>", DEMO_TOAST_SCRIPT + "\n</body>", 1)
     return html
@@ -114,10 +162,13 @@ def render_pages(env: Environment) -> dict[str, str]:
         ),
         "upload.html": env.get_template("upload.html").render(is_desktop=False),
     }
-    return {
-        name: inject_demo_chrome(rewrite_asset_paths(html))
-        for name, html in pages.items()
-    }
+    out = {}
+    for name, html in pages.items():
+        rewritten = rewrite_asset_paths(html)
+        out[name] = inject_demo_chrome(
+            rewritten, desktop_frame=(name == "dashboard.html")
+        )
+    return out
 
 
 def copy_static() -> None:

@@ -7,12 +7,24 @@
   const progressContainer = document.getElementById("progressContainer");
   const progressPct = document.getElementById("progressPct");
   const progressStats = document.getElementById("progressStats");
+  const progressSpeed = document.getElementById("progressSpeed");
+  const progressEta = document.getElementById("progressEta");
   const statusText = document.getElementById("statusText");
   const submitBtn = document.getElementById("submitBtn");
   const dropZone = document.getElementById("dropZone");
   const successPanel = document.getElementById("successPanel");
 
   if (!fileInput || !form) return;
+
+  function setMeter(pct, speedText, etaText, bytesText) {
+    if (progressPct) progressPct.textContent = pct;
+    if (progressSpeed) progressSpeed.textContent = speedText;
+    if (progressEta) progressEta.textContent = "ETA " + etaText;
+    if (progressStats) {
+      progressStats.textContent = speedText + " · ETA " + etaText;
+    }
+    if (statusText && bytesText != null) statusText.textContent = bytesText;
+  }
 
   function updateFileName() {
     if (fileInput.files.length > 0) {
@@ -60,9 +72,7 @@
     if (successPanel) successPanel.classList.add("hidden");
     progressContainer.classList.remove("hidden");
     statusText.classList.remove("hidden", "text-success", "text-danger");
-    statusText.textContent = "Simulando envio (demo)…";
-    if (progressPct) progressPct.textContent = "0%";
-    if (progressStats) progressStats.textContent = "—";
+    setMeter("0%", "—", "—", "Simulando envio (demo)…");
     progressBar.style.width = "0%";
     submitBtn.disabled = true;
     submitBtn.classList.add("opacity-50", "cursor-not-allowed");
@@ -74,8 +84,7 @@
         pct = 100;
         clearInterval(timer);
         progressBar.style.width = "100%";
-        if (progressPct) progressPct.textContent = "100%";
-        if (progressStats) progressStats.textContent = "demo";
+        setMeter("100%", "demo", "—", "");
         statusText.textContent =
           "Demo: arquivo não foi enviado. Use o app SwiftSend na rede local.";
         statusText.classList.add("text-danger");
@@ -84,9 +93,8 @@
         return;
       }
       progressBar.style.width = pct + "%";
-      if (progressPct) progressPct.textContent = pct + "%";
-      if (progressStats) progressStats.textContent = "~12 MB/s · ETA " + Math.max(1, Math.round((100 - pct) / 12)) + "s";
-      statusText.textContent = pct + "% (simulado)";
+      var eta = Math.max(1, Math.round((100 - pct) / 12));
+      setMeter(pct + "%", "~12 MB/s", eta + "s", pct + "% (simulado)");
     }, 120);
   });
 })();
