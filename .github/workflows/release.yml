@@ -14,14 +14,50 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  python-windows:
-    name: PyInstaller (Windows)
-    runs-on: windows-latest
+  python:
+    name: PyInstaller (${{ matrix.id }})
+    runs-on: ${{ matrix.os }}
     defaults:
       run:
         working-directory: python
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            id: windows-amd64
+            binary: SwiftSend.exe
+            asset_ext: .exe
+          - os: ubuntu-latest
+            id: linux-amd64
+            binary: SwiftSend
+            asset_ext: ""
+          - os: macos-latest
+            id: macos-arm64
+            binary: SwiftSend
+            asset_ext: ""
+          - os: macos-13
+            id: macos-amd64
+            binary: SwiftSend
+            asset_ext: ""
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install Linux GUI deps (pywebview / GTK)
+        if: runner.os == 'Linux'
+        working-directory: ${{ github.workspace }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgtk-3-0 \
+            libwebkit2gtk-4.1-0 \
+            gir1.2-gtk-3.0 \
+            gir1.2-webkit2-4.1 \
+            python3-gi \
+            python3-gi-cairo \
+            libgirepository1.0-dev \
+            libcairo2-dev \
+            pkg-config
 
       - uses: actions/setup-python@v5
         with:
@@ -33,22 +69,35 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          if [ "${{ runner.os }}" = "Linux" ]; then
+            pip install PyGObject
+          fi
+        shell: bash
 
       - name: Build
         run: python build.py
 
       - name: Package artifact
-        shell: pwsh
+        shell: bash
         run: |
-          $tag = if ($env:GITHUB_REF_TYPE -eq "tag") { $env:GITHUB_REF_NAME } else { "dev" }
-          New-Item -ItemType Directory -Force -Path ../release-out | Out-Null
-          Copy-Item dist/SwiftSend.exe "../release-out/SwiftSend-python-windows-$tag.exe"
+          tag="${GITHUB_REF_NAME}"
+          if [ "${GITHUB_REF_TYPE}" != "tag" ]; then
+            tag="dev"
+          fi
+          id="${{ matrix.id }}"
+          mkdir -p ../release-out
+          src="dist/${{ matrix.binary }}"
+          test -f "$src"
+          chmod +x "$src" || true
+          dest="../release-out/SwiftSend-python-${id}-${tag}${{ matrix.asset_ext }}"
+          cp "$src" "$dest"
+          ls -la ../release-out
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SwiftSend-python-windows
-          path: release-out/SwiftSend-python-windows-*.exe
+          name: SwiftSend-python-${{ matrix.id }}
+          path: release-out/SwiftSend-python-${{ matrix.id }}-*
           if-no-files-found: error
 
   csharp-windows:
@@ -103,15 +152,16 @@ jobs:
 
   github-release:
     name: Publish GitHub Release
-    needs: [python-windows, csharp-windows]
+    needs: [python, csharp-windows]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
-      - name: Download Python artifact
+      - name: Download Python artifacts
         uses: actions/download-artifact@v4
         with:
-          name: SwiftSend-python-windows
+          pattern: SwiftSend-python-*
           path: dist
+          merge-multiple: true
 
       - name: Download C# artifacts
         uses: actions/download-artifact@v4
@@ -129,20 +179,29 @@ jobs:
           prerelease: ${{ contains(github.ref_name, '-') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
           generate_release_notes: true
           files: |
-            dist/SwiftSend-python-windows-*.exe
+            dist/SwiftSend-python-*
             dist/SwiftSend-csharp-windows-*.zip
           body: |
-            ## Binários Windows
+            ## Python (multiplataforma)
+
+            | Artefato | Plataforma |
+            |----------|------------|
+            | `SwiftSend-python-windows-amd64-${{ github.ref_name }}.exe` | Windows x64 |
+            | `SwiftSend-python-linux-amd64-${{ github.ref_name }}` | Linux x64 |
+            | `SwiftSend-python-macos-arm64-${{ github.ref_name }}` | macOS Apple Silicon |
+            | `SwiftSend-python-macos-amd64-${{ github.ref_name }}` | macOS Intel |
+
+            No Linux/macOS: `chmod +x` no binário antes de executar. Linux precisa de GTK 3 + WebKitGTK (ex.: `libgtk-3-0`, `libwebkit2gtk-4.1-0` no Debian/Ubuntu).
+
+            ## C# (Windows)
 
             | Artefato | Descrição |
             |----------|-----------|
-            | `SwiftSend-python-windows-${{ github.ref_name }}.exe` | Python (Flask + pywebview) — primária |
-            | `SwiftSend-csharp-windows-fdd-${{ github.ref_name }}.zip` | C# Framework-Dependent — exige [.NET 8 Desktop](https://dotnet.microsoft.com/download/dotnet/8.0) + ASP.NET Core Runtime |
-            | `SwiftSend-csharp-windows-scd-${{ github.ref_name }}.zip` | C# Self-Contained — inclui o runtime .NET |
-            | `SwiftSend-csharp-windows-r2r-${{ github.ref_name }}.zip` | C# Self-Contained + ReadyToRun — startup mais rápido |
+            | `SwiftSend-csharp-windows-fdd-${{ github.ref_name }}.zip` | Framework-Dependent — exige [.NET 8 Desktop](https://dotnet.microsoft.com/download/dotnet/8.0) + ASP.NET Core Runtime |
+            | `SwiftSend-csharp-windows-scd-${{ github.ref_name }}.zip` | Self-Contained — inclui o runtime .NET |
+            | `SwiftSend-csharp-windows-r2r-${{ github.ref_name }}.zip` | Self-Contained + ReadyToRun — startup mais rápido |
 
-            Extraia o zip C# e execute `SwiftSend.exe`. Todas as builds C# exigem [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/).
+            Extraia o zip C# e execute `SwiftSend.exe`. Builds C# exigem [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/).
             Native AOT não está disponível: WPF não é compatível com `PublishAot` (NETSDK1168).
-            macOS/Linux: use a versão Python em desenvolvimento (`python/run.sh`).
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

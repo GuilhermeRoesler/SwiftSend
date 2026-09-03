@@ -44,10 +44,12 @@ Requisitos: .NET 8 SDK + [WebView2 Runtime](https://developer.microsoft.com/micr
 ```powershell
 cd python
 python build.py
-# → python/dist/SwiftSend.exe
+# Windows → python/dist/SwiftSend.exe
+# Linux/macOS → python/dist/SwiftSend
 ```
 
-Incluir `shared/` nos datas do PyInstaller se o build deixar de achar templates/static.
+Build **nativo por SO** (sem cross-compile). Inclui `shared/` e `--collect-all=webview`.
+No Linux de CI: GTK 3 + WebKitGTK + `PyGObject`.
 
 ### C# → publish profiles (win-x64)
 
@@ -65,6 +67,6 @@ dotnet publish csharp/SwiftSend/SwiftSend.csproj -c Release -p:PublishProfile=Re
 
 ## Notas
 
-- Artefato C# = “windows-optimized”; macOS/Linux continuam na stack Python.
+- C# = Windows only; Python = multiplataforma (releases win/linux/mac).
 - PyInstaller: binário grande / possíveis falsos positivos de antivírus.
-- CD: tag `v*` → Release com Python + três zips C# (`fdd` / `scd` / `r2r`). Native AOT indisponível (WPF).
+- CD: tag `v*` → Python (`windows-amd64`, `linux-amd64`, `macos-arm64`, `macos-amd64`) + zips C# (`fdd` / `scd` / `r2r`).

@@ -65,13 +65,16 @@ pip install -r requirements.txt
 python main.py
 ```
 
-### Python (build .exe)
+### Python (build)
 
 ```powershell
 cd python
 python build.py
-# → python/dist/SwiftSend.exe
+# Windows → python/dist/SwiftSend.exe
+# Linux/macOS → python/dist/SwiftSend
 ```
+
+Rode o build **no SO de destino** (PyInstaller não faz cross-compile).
 
 ### C# (Windows)
 
@@ -109,9 +112,10 @@ dotnet publish csharp/SwiftSend/SwiftSend.csproj -c Release -p:PublishProfile=Re
 
 Push de uma tag `v*` (ex.: `v1.0.0`) dispara o workflow **Release**:
 
-1. Build PyInstaller (Windows) → `SwiftSend-python-windows-<tag>.exe`
+1. PyInstaller em 4 runners → Windows amd64, Linux amd64, macOS arm64, macOS amd64
 2. Publish C# (Windows) em três zips → `…-fdd-…`, `…-scd-…`, `…-r2r-…`
-3. Publica um [GitHub Release](../../releases) com os artefatos e notas geradas
+3. Publica um [GitHub Release](../../releases) com todos os artefatos
+
 ```bash
 git tag v1.0.0
 git push origin v1.0.0
