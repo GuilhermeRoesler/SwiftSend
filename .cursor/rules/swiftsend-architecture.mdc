@@ -1,0 +1,12 @@
+---
+description: Arquitetura dual-stack SwiftSend — aponta para a skill de layout
+alwaysApply: true
+---
+
+# SwiftSend — Arquitetura
+
+Antes de reorganizar pastas, escolher stack, alterar shells desktop ou discutir papéis Python/C#/shared, leia:
+
+`.cursor/skills/swiftsend-architecture/SKILL.md`
+
+Python = primária; C# = secundária Windows; UI só em `shared/`. Não duplicar templates entre backends.

@@ -1,0 +1,12 @@
+---
+description: Produto SwiftSend — aponta para a skill de domínio e invariantes
+alwaysApply: true
+---
+
+# SwiftSend — Produto
+
+Antes de alterar escopo, fluxo host/visitante, pastas de arquivos ou limitações do MVP, leia:
+
+`.cursor/skills/swiftsend-product/SKILL.md`
+
+Preserve: HTTP na LAN + WebView + pastas locais (`arquivos_publicos` / `arquivos_recebidos`), sem auth/DB/nuvem.

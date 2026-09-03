@@ -1,0 +1,12 @@
+---
+description: Contrato HTTP SwiftSend — aponta para a skill de rotas e paridade
+alwaysApply: true
+---
+
+# SwiftSend — Contrato HTTP
+
+Antes de criar ou alterar rotas, upload/download, detecção host/visitante ou limites HTTP, leia:
+
+`.cursor/skills/swiftsend-http-contract/SKILL.md`
+
+Mantenha paridade Flask ↔ Kestrel. Mudança de contrato → atualizar **Python e C#**, salvo pedido em contrário.

@@ -1,0 +1,13 @@
+---
+description: UI shared do SwiftSend — aponta para a skill de templates e static
+globs: shared/**
+alwaysApply: false
+---
+
+# SwiftSend — UI
+
+Ao editar templates, CSS, JS ou fonts, leia:
+
+`.cursor/skills/swiftsend-ui/SKILL.md`
+
+UI única em `shared/`; compatível Jinja + Fluid; textos em português; assets locais.
