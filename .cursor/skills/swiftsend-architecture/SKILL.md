@@ -17,8 +17,9 @@ SwiftSend/
 ├── python/               → primária (Flask + pywebview + PyInstaller)
 ├── csharp/               → secundária Windows (Kestrel + WebView2 + Fluid)
 ├── shared/               → UI única (templates + static)
-├── arquivos_publicos/    → runtime (gitignored)
-└── arquivos_recebidos/   → runtime (gitignored)
+├── installer/            → Inno Setup (Windows; empacota build Python)
+├── arquivos_publicos/    → runtime (gitignored; em Windows frozen → Documentos)
+└── arquivos_recebidos/   → runtime (gitignored; idem)
 ```
 
 ## Papéis

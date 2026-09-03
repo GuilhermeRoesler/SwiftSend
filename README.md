@@ -20,6 +20,7 @@ SwiftSend/
 ├── python/              # primária (Flask + pywebview)
 ├── csharp/              # secundária (ASP.NET + WebView2, Windows)
 ├── shared/              # UI única (templates + static)
+├── installer/           # Inno Setup (Windows, build Python)
 ├── images/
 └── icon.png
 ```
@@ -76,6 +77,17 @@ python build.py
 
 Rode o build **no SO de destino** (PyInstaller não faz cross-compile).
 
+### Instalador Windows (Inno Setup)
+
+Requisito: [Inno Setup 6](https://jrsoftware.org/isinfo.php). Empacota o `.exe` PyInstaller:
+
+```powershell
+.\installer\build_installer.ps1 -Version 1.0.0
+# → installer/output/SwiftSend-Setup-1.0.0.exe
+```
+
+Com o `.exe` já gerado: `-SkipBuild`. O setup instala em Program Files, cria atalhos no Menu Iniciar e desinstalador; pastas de dados ficam em `Documentos\SwiftSend`.
+
 ### C# (Windows)
 
 Requisitos: .NET 8 SDK e [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/).
@@ -101,8 +113,10 @@ dotnet publish csharp/SwiftSend/SwiftSend.csproj -c Release -p:PublishProfile=Re
 
 1. Abra o app — o dashboard mostra o link (ex.: `http://192.168.0.15:5000`).
 2. Coloque arquivos em `arquivos_publicos/` (ou use **Gerenciar Públicos**).
+   - No Windows (build frozen / instalado): `Documentos\SwiftSend\arquivos_publicos`.
+   - Em desenvolvimento: pastas na raiz do repositório.
 3. Na mesma rede, abra o link no navegador para baixar ou enviar.
-4. Uploads chegam em `arquivos_recebidos/`.
+4. Uploads chegam em `arquivos_recebidos/` (mesmo `DATA_ROOT`).
 
 ![Download view](images/download_view.png)
 
@@ -112,9 +126,10 @@ dotnet publish csharp/SwiftSend/SwiftSend.csproj -c Release -p:PublishProfile=Re
 
 Push de uma tag `v*` (ex.: `v1.0.0`) dispara o workflow **Release**:
 
-1. PyInstaller em 4 runners → Windows amd64, Linux amd64, macOS arm64, macOS amd64
-2. Publish C# (Windows) em três zips → `…-fdd-…`, `…-scd-…`, `…-r2r-…`
-3. Publica um [GitHub Release](../../releases) com todos os artefatos
+1. PyInstaller (Windows amd64, Linux amd64; macOS temporariamente off)
+2. Instalador Inno Setup Windows → `SwiftSend-Setup-v….exe` (recomendado no Windows)
+3. Publish C# (Windows) em três zips → `…-fdd-…`, `…-scd-…`, `…-r2r-…`
+4. Publica um [GitHub Release](../../releases) com todos os artefatos
 
 ```bash
 git tag v1.0.0

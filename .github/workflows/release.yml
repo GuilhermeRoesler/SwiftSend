@@ -167,9 +167,60 @@ jobs:
           path: release-out/SwiftSend-csharp-windows-*.zip
           if-no-files-found: error
 
+  windows-installer:
+    name: Inno Setup (Windows)
+    needs: [python]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Python Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: SwiftSend-python-windows-amd64
+          path: release-in
+
+      - name: Stage SwiftSend.exe for Inno
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path python/dist | Out-Null
+          $src = Get-ChildItem -Path release-in -Filter "SwiftSend-python-windows-amd64-*" -File |
+            Select-Object -First 1
+          if (-not $src) { throw "Artifact exe not found in release-in" }
+          Copy-Item $src.FullName python/dist/SwiftSend.exe -Force
+          Get-Item python/dist/SwiftSend.exe | Format-List Name, Length
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup -y --no-progress
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $tag = if ($env:GITHUB_REF_TYPE -eq "tag") { $env:GITHUB_REF_NAME } else { "dev" }
+          $version = if ($tag -match '^v(.+)$') { $Matches[1] } else { $tag }
+          .\installer\build_installer.ps1 -Version $version -SkipBuild
+
+      - name: Package artifact
+        shell: pwsh
+        run: |
+          $tag = if ($env:GITHUB_REF_TYPE -eq "tag") { $env:GITHUB_REF_NAME } else { "dev" }
+          $version = if ($tag -match '^v(.+)$') { $Matches[1] } else { $tag }
+          New-Item -ItemType Directory -Force -Path release-out | Out-Null
+          $src = "installer/output/SwiftSend-Setup-$version.exe"
+          if (-not (Test-Path $src)) { throw "Missing $src" }
+          Copy-Item $src "release-out/SwiftSend-Setup-$tag.exe" -Force
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SwiftSend-Setup-windows
+          path: release-out/SwiftSend-Setup-*.exe
+          if-no-files-found: error
+
   github-release:
     name: Publish GitHub Release
-    needs: [python, csharp-windows]
+    needs: [python, csharp-windows, windows-installer]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
@@ -179,6 +230,12 @@ jobs:
           pattern: SwiftSend-python-*
           path: dist
           merge-multiple: true
+
+      - name: Download Windows installer
+        uses: actions/download-artifact@v4
+        with:
+          name: SwiftSend-Setup-windows
+          path: dist
 
       - name: Download C# artifacts
         uses: actions/download-artifact@v4
@@ -196,17 +253,27 @@ jobs:
           prerelease: ${{ contains(github.ref_name, '-') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
           generate_release_notes: true
           files: |
+            dist/SwiftSend-Setup-*.exe
             dist/SwiftSend-python-*
             dist/SwiftSend-csharp-windows-*.zip
           body: |
-            ## Python (multiplataforma)
+            ## Windows (recomendado)
+
+            | Artefato | Descrição |
+            |----------|-----------|
+            | `SwiftSend-Setup-${{ github.ref_name }}.exe` | Instalador (Inno Setup) — Menu Iniciar, desinstalador; dados em `Documentos\SwiftSend` |
+
+            O setup usa o build **Python** (PyInstaller). Se o WebView2 Runtime não estiver presente, o instalador tenta baixá-lo.
+
+            ## Python (portable / multiplataforma)
 
             | Artefato | Plataforma |
             |----------|------------|
-            | `SwiftSend-python-windows-amd64-${{ github.ref_name }}.exe` | Windows x64 |
+            | `SwiftSend-python-windows-amd64-${{ github.ref_name }}.exe` | Windows x64 (portable) |
             | `SwiftSend-python-linux-amd64-${{ github.ref_name }}` | Linux x64 |
 
             No Linux: `chmod +x` no binário antes de executar. Linux precisa de GTK 3 + WebKitGTK (ex.: `libgtk-3-0`, `libwebkit2gtk-4.1-0` no Debian/Ubuntu).
+            No Windows portable (frozen): pastas de dados em `Documentos\SwiftSend`.
 
             > Builds macOS (arm64/amd64) estão temporariamente desabilitados no CI.
 

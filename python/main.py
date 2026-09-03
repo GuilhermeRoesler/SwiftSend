@@ -9,9 +9,30 @@ from pathlib import Path
 from flask import Flask, jsonify, redirect, render_template, request, send_from_directory, url_for
 from werkzeug.utils import secure_filename
 
+
+def _windows_documents_dir() -> Path:
+    """Pasta Documentos do usuário (CSIDL_PERSONAL), com fallback."""
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        csidl_personal = 5
+        shgfp_type_current = 0
+        buf = ctypes.create_unicode_buffer(wintypes.MAX_PATH)
+        hr = ctypes.windll.shell32.SHGetFolderPathW(  # type: ignore[attr-defined]
+            None, csidl_personal, None, shgfp_type_current, buf
+        )
+        if hr == 0 and buf.value:
+            return Path(buf.value)
+    except Exception:
+        pass
+    return Path.home() / "Documents"
+
+
 # --- Paths ---
 # Dev: repo root = parent of python/
-# Frozen: pasta do executável
+# Frozen Windows: Documentos/SwiftSend (gravável; instalador usa Program Files)
+# Frozen outros SOs: pasta do executável
 if getattr(sys, "frozen", False):
     APP_ROOT = Path(sys.executable).resolve().parent
     # PyInstaller extrai datas em _MEIPASS
@@ -19,7 +40,10 @@ if getattr(sys, "frozen", False):
     SHARED_DIR = BUNDLE_ROOT / "shared"
     if not SHARED_DIR.exists():
         SHARED_DIR = APP_ROOT / "shared"
-    DATA_ROOT = APP_ROOT
+    if sys.platform == "win32":
+        DATA_ROOT = _windows_documents_dir() / "SwiftSend"
+    else:
+        DATA_ROOT = APP_ROOT
 else:
     APP_ROOT = Path(__file__).resolve().parent
     DATA_ROOT = APP_ROOT.parent  # repo root

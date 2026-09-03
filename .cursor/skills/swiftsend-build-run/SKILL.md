@@ -51,6 +51,18 @@ python build.py
 Build **nativo por SO** (sem cross-compile). Inclui `shared/` e `--collect-all=webview`.
 No Linux de CI: GTK 3 + WebKitGTK + `libgirepository-2.0-dev` + `PyGObject` (≥3.51 exige girepository 2.0).
 
+### Windows → Inno Setup (canônico)
+
+Requisito: [Inno Setup 6](https://jrsoftware.org/isinfo.php) (`ISCC.exe`).
+
+```powershell
+.\installer\build_installer.ps1 -Version 1.0.0
+# → installer/output/SwiftSend-Setup-1.0.0.exe
+# -SkipBuild usa python/dist/SwiftSend.exe já existente
+```
+
+Instala em `{autopf}\SwiftSend`, Menu Iniciar + desinstalador. Dados do usuário: `Documentos\SwiftSend\` (não apagados na desinstalação). O setup tenta instalar o WebView2 Runtime se ausente.
+
 ### C# → publish profiles (win-x64)
 
 ```powershell
@@ -71,5 +83,6 @@ O `csproj` copia `shared/` para output e publish (ao lado do `.exe`). Sem isso a
 
 - C# = Windows only; Python = multiplataforma (releases win/linux/mac).
 - PyInstaller: binário grande / possíveis falsos positivos de antivírus.
-- CD: tag `v*` → Python (`windows-amd64`, `linux-amd64`, `macos-arm64`, `macos-amd64`) + zips C# (`fdd` / `scd` / `r2r`).
+- CD: tag `v*` → Python (`windows-amd64`, `linux-amd64`, …) + **Inno Setup** (`SwiftSend-Setup-v*.exe`) + zips C# (`fdd` / `scd` / `r2r`).
+- Frozen Windows: `DATA_ROOT` = `Documentos\SwiftSend` (pastas `arquivos_*`).
 - Demo Pages: `python demo/build.py` + workflow `.github/workflows/pages.yml` (UI estática a partir de `shared/`).

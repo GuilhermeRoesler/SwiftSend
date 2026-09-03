@@ -31,6 +31,7 @@ App desktop híbrido: o host sobe um servidor HTTP na rede local; a UI web serve
 
 - Sem autenticação, banco, HTTPS, mDNS ou fila de transfers.
 - Persistência = sistema de arquivos local na raiz de dados (`DATA_ROOT`).
+- Windows frozen (PyInstaller / instalador): `DATA_ROOT` = `Documentos\SwiftSend`.
 - Clientes na LAN não devem perceber qual runtime (Python ou C#) hospeda o servidor.
 - Strings de UI em **português** (`pt-br`).
 - Porta padrão **5000**; bind **`0.0.0.0`**.
