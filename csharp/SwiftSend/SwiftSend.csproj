@@ -17,4 +17,12 @@
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
   </ItemGroup>
 
+  <!-- UI compartilhada ao lado do .exe (build e publish single-file). -->
+  <ItemGroup>
+    <Content Include="..\..\shared\**\*"
+             LinkBase="shared"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

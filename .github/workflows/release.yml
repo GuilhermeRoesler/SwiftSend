@@ -133,6 +133,22 @@ jobs:
           -c Release
           -p:PublishProfile=${{ matrix.profile }}
 
+      - name: Verify shared UI bundled
+        shell: pwsh
+        run: |
+          $src = "${{ matrix.out_dir }}"
+          $required = @(
+            "shared/templates/dashboard.html",
+            "shared/templates/home.html",
+            "shared/static/css/app.css"
+          )
+          foreach ($rel in $required) {
+            $path = Join-Path $src $rel
+            if (-not (Test-Path $path)) {
+              throw "Missing bundled UI file: $path"
+            }
+          }
+
       - name: Package artifact
         shell: pwsh
         run: |

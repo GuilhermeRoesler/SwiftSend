@@ -61,9 +61,11 @@ dotnet publish csharp/SwiftSend/SwiftSend.csproj -c Release -p:PublishProfile=Re
 
 | Perfil | Conteúdo | Requisito extra |
 |--------|----------|-----------------|
-| `FrameworkDependent` | single-file FDD | .NET 8 Desktop + ASP.NET Core Runtime |
-| `SelfContained` | single-file SCD | — (só WebView2) |
-| `ReadyToRun` | SCD + R2R | — (só WebView2); Native AOT (`PublishAot`) **não** funciona com WPF |
+| `FrameworkDependent` | single-file FDD + `shared/` | .NET 8 Desktop + ASP.NET Core Runtime |
+| `SelfContained` | single-file SCD + `shared/` | — (só WebView2) |
+| `ReadyToRun` | SCD + R2R + `shared/` | — (só WebView2); Native AOT (`PublishAot`) **não** funciona com WPF |
+
+O `csproj` copia `shared/` para output e publish (ao lado do `.exe`). Sem isso a UI responde HTTP 500.
 
 ## Notas
 
