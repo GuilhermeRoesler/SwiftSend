@@ -4,14 +4,20 @@ internal static class AppPaths
 {
     public const int Port = 5000;
 
+    private static readonly string DefaultUploadFolder;
+    private static readonly string DefaultPublicFolder;
+    private static string? _uploadOverride;
+    private static string? _publicOverride;
+
     public static string DataRoot { get; }
     public static string SharedDir { get; }
     public static string TemplatesDir { get; }
     public static string StaticDir { get; }
-    public static string UploadFolder { get; }
-    public static string PublicFolder { get; }
     public static string LocalIp { get; }
     public static string BaseUrl { get; }
+
+    public static string UploadFolder => _uploadOverride ?? DefaultUploadFolder;
+    public static string PublicFolder => _publicOverride ?? DefaultPublicFolder;
 
     static AppPaths()
     {
@@ -19,12 +25,33 @@ internal static class AppPaths
         SharedDir = ResolveSharedDir(DataRoot);
         TemplatesDir = Path.Combine(SharedDir, "templates");
         StaticDir = Path.Combine(SharedDir, "static");
-        UploadFolder = Path.Combine(DataRoot, "arquivos_recebidos");
-        PublicFolder = Path.Combine(DataRoot, "arquivos_publicos");
-        Directory.CreateDirectory(UploadFolder);
-        Directory.CreateDirectory(PublicFolder);
+        DefaultUploadFolder = Path.Combine(DataRoot, "arquivos_recebidos");
+        DefaultPublicFolder = Path.Combine(DataRoot, "arquivos_publicos");
+        Directory.CreateDirectory(DefaultUploadFolder);
+        Directory.CreateDirectory(DefaultPublicFolder);
         LocalIp = GetLocalIp();
         BaseUrl = $"http://{LocalIp}:{Port}";
+    }
+
+    /// <summary>
+    /// Redireciona pastas de dados para testes (isolados). Restaurar com Dispose.
+    /// </summary>
+    internal static IDisposable OverrideFolders(string uploadFolder, string publicFolder)
+    {
+        Directory.CreateDirectory(uploadFolder);
+        Directory.CreateDirectory(publicFolder);
+        _uploadOverride = uploadFolder;
+        _publicOverride = publicFolder;
+        return new FolderOverrideScope();
+    }
+
+    private sealed class FolderOverrideScope : IDisposable
+    {
+        public void Dispose()
+        {
+            _uploadOverride = null;
+            _publicOverride = null;
+        }
     }
 
     private static string ResolveDataRoot()

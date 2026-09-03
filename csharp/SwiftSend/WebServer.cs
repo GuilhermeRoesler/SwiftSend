@@ -10,10 +10,28 @@ using Microsoft.Extensions.Logging;
 
 namespace SwiftSend;
 
+internal sealed class WebServerOptions
+{
+    public static WebServerOptions Default { get; } = new();
+
+    /// <summary>Quando true, escuta 0.0.0.0:5000 (produção). Em testes use false + Configure UseTestServer.</summary>
+    public bool Listen { get; init; } = true;
+
+    public Action<WebApplicationBuilder>? Configure { get; init; }
+
+    /// <summary>Substitui abertura do Explorer (no-op útil em testes).</summary>
+    public Action<string>? OpenFolder { get; init; }
+}
+
 internal static class WebServer
 {
-    public static WebApplication Build()
+    private static Action<string> _openFolder = DefaultOpenFolder;
+
+    public static WebApplication Build(WebServerOptions? options = null)
     {
+        options ??= WebServerOptions.Default;
+        _openFolder = options.OpenFolder ?? DefaultOpenFolder;
+
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions
         {
             Args = [],
@@ -23,18 +41,20 @@ internal static class WebServer
         builder.Logging.ClearProviders();
         builder.Logging.SetMinimumLevel(LogLevel.Warning);
 
-        builder.WebHost.ConfigureKestrel(options =>
+        builder.WebHost.ConfigureKestrel(kestrel =>
         {
-            options.Limits.MaxRequestBodySize = 16L * 1024 * 1024 * 1024;
-            options.ListenAnyIP(AppPaths.Port);
+            kestrel.Limits.MaxRequestBodySize = 16L * 1024 * 1024 * 1024;
+            if (options.Listen)
+                kestrel.ListenAnyIP(AppPaths.Port);
         });
 
-        builder.Services.Configure<FormOptions>(options =>
+        builder.Services.Configure<FormOptions>(form =>
         {
-            options.MultipartBodyLengthLimit = 16L * 1024 * 1024 * 1024;
+            form.MultipartBodyLengthLimit = 16L * 1024 * 1024 * 1024;
         });
 
         builder.Services.AddSingleton<TemplateRenderer>();
+        options.Configure?.Invoke(builder);
 
         var app = builder.Build();
 
@@ -80,13 +100,13 @@ internal static class WebServer
 
         app.MapGet("/upload_manager", () =>
         {
-            OpenFolder(AppPaths.UploadFolder);
+            _openFolder(AppPaths.UploadFolder);
             return Results.Redirect("/");
         });
 
         app.MapGet("/public_manager", () =>
         {
-            OpenFolder(AppPaths.PublicFolder);
+            _openFolder(AppPaths.PublicFolder);
             return Results.Redirect("/");
         });
 
@@ -155,7 +175,7 @@ internal static class WebServer
         });
     }
 
-    private static void OpenFolder(string path)
+    private static void DefaultOpenFolder(string path)
     {
         Directory.CreateDirectory(path);
         Process.Start(new ProcessStartInfo
