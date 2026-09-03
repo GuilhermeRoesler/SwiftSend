@@ -55,9 +55,10 @@ def build() -> Path:
     if sys.platform == "win32":
         args.append("--noconsole")
 
+    # Windows exige .ico (ou Pillow para converter PNG). Preferir icon.ico nativo.
     icon_ico = REPO / "icon.ico"
     icon_png = REPO / "icon.png"
-    if sys.platform == "win32" and icon_ico.exists():
+    if icon_ico.exists():
         args.append(f"--icon={icon_ico}")
     elif icon_png.exists():
         args.append(f"--icon={icon_png}")

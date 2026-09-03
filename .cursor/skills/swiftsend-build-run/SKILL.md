@@ -27,7 +27,7 @@ pip install -r requirements.txt
 python main.py
 ```
 
-Deps: `flask`, `pywebview`, `pyinstaller`.
+Deps: `flask`, `pywebview`, `pyinstaller`, `pillow` (conversão de ícone PNG→ICO no Windows).
 
 ### C# (Windows)
 
@@ -49,7 +49,7 @@ python build.py
 ```
 
 Build **nativo por SO** (sem cross-compile). Inclui `shared/` e `--collect-all=webview`.
-No Linux de CI: GTK 3 + WebKitGTK + `PyGObject`.
+No Linux de CI: GTK 3 + WebKitGTK + `libgirepository-2.0-dev` + `PyGObject` (≥3.51 exige girepository 2.0).
 
 ### C# → publish profiles (win-x64)
 
