@@ -7,6 +7,7 @@
   const progressContainer = document.getElementById("progressContainer");
   const statusText = document.getElementById("statusText");
   const submitBtn = document.getElementById("submitBtn");
+  const dropZone = document.getElementById("dropZone");
 
   if (!fileInput || !form) return;
 
@@ -22,6 +23,31 @@
   }
 
   fileInput.addEventListener("change", updateFileName);
+
+  if (dropZone) {
+    ["dragenter", "dragover"].forEach(function (eventName) {
+      dropZone.addEventListener(eventName, function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.add("is-dragover");
+      });
+    });
+
+    ["dragleave", "drop"].forEach(function (eventName) {
+      dropZone.addEventListener(eventName, function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.remove("is-dragover");
+      });
+    });
+
+    dropZone.addEventListener("drop", function (e) {
+      if (e.dataTransfer && e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
+        updateFileName();
+      }
+    });
+  }
 
   form.addEventListener("submit", function (event) {
     event.preventDefault();

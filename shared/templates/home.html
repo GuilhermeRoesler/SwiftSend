@@ -10,30 +10,30 @@
 <body class="flex flex-col h-screen">
     <header class="site-header">
         <div class="flex items-center gap-2 text-brand">
-            <span class="icon icon-xl" aria-hidden="true">⟳</span>
+            <span class="material-symbols-outlined text-3xl" aria-hidden="true">cloud_sync</span>
             <h1 class="text-xl font-medium tracking-tight">SwiftSend</h1>
         </div>
     </header>
 
     <main class="flex-1 overflow-auto p-4 md:p-8">
-        <div class="max-w-5xl mx-auto">
+        <div class="max-w-5xl mx-auto page-enter">
             <div class="text-center mb-10">
                 <h2 class="text-3xl font-normal text-gray-800">Compartilhamento Local</h2>
                 <p class="text-gray-500 mt-2">Escolha uma ação abaixo</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
-                <a href="/browse" class="google-card p-8 flex flex-col items-center text-center no-underline">
-                    <div class="icon-circle lg bg-green-50 text-green-600 mb-6">
-                        <span class="icon icon-2xl" aria-hidden="true">⬇</span>
+                <a href="/browse" class="google-card p-8 flex flex-col items-center text-center group cursor-pointer no-underline">
+                    <div class="w-20 h-20 bg-green-50 text-green-600 rounded-full flex items-center justify-center mb-6 group-hover:bg-green-100 transition">
+                        <span class="material-symbols-outlined text-4xl" aria-hidden="true">cloud_download</span>
                     </div>
                     <h3 class="text-xl font-medium text-gray-800">Baixar Arquivos</h3>
                     <p class="text-gray-500 mt-2 text-sm">Acesse arquivos disponibilizados pelo host.</p>
                 </a>
 
-                <a href="/upload" class="google-card p-8 flex flex-col items-center text-center no-underline">
-                    <div class="icon-circle lg bg-blue-50 text-blue-600 mb-6">
-                        <span class="icon icon-2xl" aria-hidden="true">⬆</span>
+                <a href="/upload" class="google-card p-8 flex flex-col items-center text-center group cursor-pointer no-underline">
+                    <div class="w-20 h-20 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-6 group-hover:bg-blue-100 transition">
+                        <span class="material-symbols-outlined text-4xl" aria-hidden="true">cloud_upload</span>
                     </div>
                     <h3 class="text-xl font-medium text-gray-800">Enviar Arquivos</h3>
                     <p class="text-gray-500 mt-2 text-sm">Envie arquivos pesados para o host.</p>
