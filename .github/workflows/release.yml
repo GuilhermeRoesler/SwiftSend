@@ -32,14 +32,15 @@ jobs:
             id: linux-amd64
             binary: SwiftSend
             asset_ext: ""
-          - os: macos-latest
-            id: macos-arm64
-            binary: SwiftSend
-            asset_ext: ""
-          - os: macos-13
-            id: macos-amd64
-            binary: SwiftSend
-            asset_ext: ""
+          # Temporariamente desabilitado (runners macOS lentos no CI)
+          # - os: macos-latest
+          #   id: macos-arm64
+          #   binary: SwiftSend
+          #   asset_ext: ""
+          # - os: macos-13
+          #   id: macos-amd64
+          #   binary: SwiftSend
+          #   asset_ext: ""
     steps:
       - uses: actions/checkout@v4
 
@@ -188,10 +189,10 @@ jobs:
             |----------|------------|
             | `SwiftSend-python-windows-amd64-${{ github.ref_name }}.exe` | Windows x64 |
             | `SwiftSend-python-linux-amd64-${{ github.ref_name }}` | Linux x64 |
-            | `SwiftSend-python-macos-arm64-${{ github.ref_name }}` | macOS Apple Silicon |
-            | `SwiftSend-python-macos-amd64-${{ github.ref_name }}` | macOS Intel |
 
-            No Linux/macOS: `chmod +x` no binário antes de executar. Linux precisa de GTK 3 + WebKitGTK (ex.: `libgtk-3-0`, `libwebkit2gtk-4.1-0` no Debian/Ubuntu).
+            No Linux: `chmod +x` no binário antes de executar. Linux precisa de GTK 3 + WebKitGTK (ex.: `libgtk-3-0`, `libwebkit2gtk-4.1-0` no Debian/Ubuntu).
+
+            > Builds macOS (arm64/amd64) estão temporariamente desabilitados no CI.
 
             ## C# (Windows)
 
