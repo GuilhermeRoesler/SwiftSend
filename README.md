@@ -81,10 +81,17 @@ Requisitos: .NET 8 SDK e [WebView2 Runtime](https://developer.microsoft.com/micr
 .\csharp\run.bat
 ```
 
-Publish single-file (Windows otimizado):
+Publish (perfis em `csharp/SwiftSend/Properties/PublishProfiles/`):
 
 ```powershell
-dotnet publish csharp/SwiftSend/SwiftSend.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o csharp/dist
+# Framework-Dependent (precisa do .NET 8 Desktop + ASP.NET Core Runtime)
+dotnet publish csharp/SwiftSend/SwiftSend.csproj -c Release -p:PublishProfile=FrameworkDependent
+
+# Self-Contained single-file
+dotnet publish csharp/SwiftSend/SwiftSend.csproj -c Release -p:PublishProfile=SelfContained
+
+# Self-Contained + ReadyToRun (alternativa a Native AOT; WPF não suporta PublishAot)
+dotnet publish csharp/SwiftSend/SwiftSend.csproj -c Release -p:PublishProfile=ReadyToRun
 ```
 
 ## Como usar
@@ -97,6 +104,18 @@ dotnet publish csharp/SwiftSend/SwiftSend.csproj -c Release -r win-x64 --self-co
 ![Download view](images/download_view.png)
 
 ![Upload view](images/upload_view.png)
+
+## Releases (CD)
+
+Push de uma tag `v*` (ex.: `v1.0.0`) dispara o workflow **Release**:
+
+1. Build PyInstaller (Windows) → `SwiftSend-python-windows-<tag>.exe`
+2. Publish C# (Windows) em três zips → `…-fdd-…`, `…-scd-…`, `…-r2r-…`
+3. Publica um [GitHub Release](../../releases) com os artefatos e notas geradas
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
 
 ## Licença
 

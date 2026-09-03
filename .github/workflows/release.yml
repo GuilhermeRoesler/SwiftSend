@@ -1,13 +1,17 @@
-name: Release build (optional)
+name: Release
 
 on:
-  workflow_dispatch:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   python-windows:
@@ -33,16 +37,39 @@ jobs:
       - name: Build
         run: python build.py
 
+      - name: Package artifact
+        shell: pwsh
+        run: |
+          $tag = if ($env:GITHUB_REF_TYPE -eq "tag") { $env:GITHUB_REF_NAME } else { "dev" }
+          New-Item -ItemType Directory -Force -Path ../release-out | Out-Null
+          Copy-Item dist/SwiftSend.exe "../release-out/SwiftSend-python-windows-$tag.exe"
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: SwiftSend-python-windows
-          path: python/dist/SwiftSend.exe
+          path: release-out/SwiftSend-python-windows-*.exe
           if-no-files-found: error
 
   csharp-windows:
-    name: Publish single-file (Windows)
+    name: C# ${{ matrix.label }} (Windows)
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: fdd
+            label: Framework-Dependent
+            profile: FrameworkDependent
+            out_dir: csharp/dist/fdd
+          - id: scd
+            label: Self-Contained
+            profile: SelfContained
+            out_dir: csharp/dist/scd
+          - id: r2r
+            label: ReadyToRun
+            profile: ReadyToRun
+            out_dir: csharp/dist/r2r
     steps:
       - uses: actions/checkout@v4
 
@@ -50,18 +77,72 @@ jobs:
         with:
           dotnet-version: "8.0.x"
 
-      - name: Publish
+      - name: Publish ${{ matrix.label }}
         run: >
           dotnet publish csharp/SwiftSend/SwiftSend.csproj
           -c Release
-          -r win-x64
-          --self-contained true
-          -p:PublishSingleFile=true
-          -o csharp/dist
+          -p:PublishProfile=${{ matrix.profile }}
+
+      - name: Package artifact
+        shell: pwsh
+        run: |
+          $tag = if ($env:GITHUB_REF_TYPE -eq "tag") { $env:GITHUB_REF_NAME } else { "dev" }
+          $id = "${{ matrix.id }}"
+          $src = "${{ matrix.out_dir }}"
+          New-Item -ItemType Directory -Force -Path release-out | Out-Null
+          # WebView2 deixa DLLs nativas ao lado do .exe — zip da pasta publish.
+          Get-ChildItem $src -Include *.pdb,*.xml -Recurse -File | Remove-Item -Force
+          Compress-Archive -Path "$src\*" -DestinationPath "release-out/SwiftSend-csharp-windows-$id-$tag.zip" -Force
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SwiftSend-csharp-windows
-          path: csharp/dist/
+          name: SwiftSend-csharp-windows-${{ matrix.id }}
+          path: release-out/SwiftSend-csharp-windows-*.zip
           if-no-files-found: error
+
+  github-release:
+    name: Publish GitHub Release
+    needs: [python-windows, csharp-windows]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Python artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: SwiftSend-python-windows
+          path: dist
+
+      - name: Download C# artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: SwiftSend-csharp-windows-*
+          path: dist
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: SwiftSend ${{ github.ref_name }}
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
+          generate_release_notes: true
+          files: |
+            dist/SwiftSend-python-windows-*.exe
+            dist/SwiftSend-csharp-windows-*.zip
+          body: |
+            ## Binários Windows
+
+            | Artefato | Descrição |
+            |----------|-----------|
+            | `SwiftSend-python-windows-${{ github.ref_name }}.exe` | Python (Flask + pywebview) — primária |
+            | `SwiftSend-csharp-windows-fdd-${{ github.ref_name }}.zip` | C# Framework-Dependent — exige [.NET 8 Desktop](https://dotnet.microsoft.com/download/dotnet/8.0) + ASP.NET Core Runtime |
+            | `SwiftSend-csharp-windows-scd-${{ github.ref_name }}.zip` | C# Self-Contained — inclui o runtime .NET |
+            | `SwiftSend-csharp-windows-r2r-${{ github.ref_name }}.zip` | C# Self-Contained + ReadyToRun — startup mais rápido |
+
+            Extraia o zip C# e execute `SwiftSend.exe`. Todas as builds C# exigem [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/).
+            Native AOT não está disponível: WPF não é compatível com `PublishAot` (NETSDK1168).
+            macOS/Linux: use a versão Python em desenvolvimento (`python/run.sh`).
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

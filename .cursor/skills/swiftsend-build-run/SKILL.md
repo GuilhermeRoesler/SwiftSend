@@ -49,14 +49,22 @@ python build.py
 
 Incluir `shared/` nos datas do PyInstaller se o build deixar de achar templates/static.
 
-### C# → single-file
+### C# → publish profiles (win-x64)
 
 ```powershell
-dotnet publish csharp/SwiftSend/SwiftSend.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o csharp/dist
+dotnet publish csharp/SwiftSend/SwiftSend.csproj -c Release -p:PublishProfile=FrameworkDependent  # → csharp/dist/fdd
+dotnet publish csharp/SwiftSend/SwiftSend.csproj -c Release -p:PublishProfile=SelfContained         # → csharp/dist/scd
+dotnet publish csharp/SwiftSend/SwiftSend.csproj -c Release -p:PublishProfile=ReadyToRun            # → csharp/dist/r2r
 ```
+
+| Perfil | Conteúdo | Requisito extra |
+|--------|----------|-----------------|
+| `FrameworkDependent` | single-file FDD | .NET 8 Desktop + ASP.NET Core Runtime |
+| `SelfContained` | single-file SCD | — (só WebView2) |
+| `ReadyToRun` | SCD + R2R | — (só WebView2); Native AOT (`PublishAot`) **não** funciona com WPF |
 
 ## Notas
 
 - Artefato C# = “windows-optimized”; macOS/Linux continuam na stack Python.
 - PyInstaller: binário grande / possíveis falsos positivos de antivírus.
-- CI de release com dois artefatos Windows é opcional (ainda não obrigatório).
+- CD: tag `v*` → Release com Python + três zips C# (`fdd` / `scd` / `r2r`). Native AOT indisponível (WPF).
