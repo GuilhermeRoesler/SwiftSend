@@ -1,95 +1,103 @@
-# <img src="icon.png" width="40" align="left" style="margin-right: .8rem">**SwiftSend \- Transferência de Arquivos Local**
+# <img src="icon.png" width="40" align="left" style="margin-right: .8rem">**SwiftSend — Transferência de Arquivos Local**
 
-O **SwiftSend** é uma aplicação desktop leve e minimalista, desenvolvida em Python, que permite enviar e receber arquivos pesados através da sua rede local (Wi-Fi/LAN) utilizando o navegador.
-
-O objetivo é eliminar a necessidade de pen-drives ou uploads lentos para a nuvem quando os dispositivos estão na mesma rede física.
+O **SwiftSend** é uma aplicação desktop leve para enviar e receber arquivos pesados na rede local (Wi-Fi/LAN), sem pen-drive nem nuvem.
 
 ![Main interface](images/main_interface.png)
 
-## **✨ Funcionalidades**
+## Funcionalidades
 
-- **Servidor Web Integrado:** Inicia um servidor Flask localmente acessível por qualquer dispositivo na rede.
-- **Interface Desktop Nativa:** Janela limpa e responsiva utilizando `pywebview`.
-- **Design Material You (Google-like):** Interface web moderna, minimalista e intuitiva.
-- **Transferência Bidirecional:**
-  - **Hospedar:** Disponibilize arquivos públicos para download.
-  - **Receber:** Receba arquivos pesados de outros dispositivos (celulares, tablets, outros PCs).
-- **Sem Limites de Internet:** A velocidade de transferência depende apenas da velocidade do seu roteador/cabo.
-- **Zero Configuração:** O app detecta automaticamente seu IP local.
+- Servidor HTTP na LAN (`0.0.0.0:5000`)
+- Janela desktop (WebView) com dashboard do host
+- UI pública para visitantes (baixar / enviar)
+- Pastas locais: `arquivos_publicos/` e `arquivos_recebidos/`
+- Detecção automática do IP local
 
-## **🛠️ Tecnologias Utilizadas**
+## Estrutura (dual-stack)
 
-- **Python 3.x**
-- **Flask** (Backend do servidor web)
-- **Pywebview** (Interface gráfica desktop)
-- **TailwindCSS** (Estilização frontend)
-- **PyInstaller** (Para gerar o executável)
-
-## **🚀 Como Rodar o Projeto (Código Fonte)**
-
-### **Pré-requisitos**
-
-Certifique-se de ter o Python instalado. Em seguida, instale as dependências:
-
-```python
-pip install flask pywebview pyinstaller
+```
+SwiftSend/
+├── run.bat / run.sh     # atalho → versão Python
+├── python/              # primária (Flask + pywebview)
+├── csharp/              # secundária (ASP.NET + WebView2, Windows)
+├── shared/              # UI única (templates + static)
+├── images/
+└── icon.png
 ```
 
-### **Executando**
+Mesmo contrato HTTP nas duas backends; a UI vive em `shared/`.
 
-Basta rodar o arquivo principal:
+## Stack
 
-```python
-python app.py
+| | Primária | Secundária |
+|--|----------|------------|
+| Runtime | Python 3 | .NET 8 (Windows) |
+| HTTP | Flask | ASP.NET Core / Kestrel |
+| Desktop | pywebview | WebView2 (WPF) |
+| UI | `shared/` | `shared/` |
+| Build | PyInstaller | `dotnet publish` |
+
+## Executar
+
+Na raiz (Python por padrão):
+
+```powershell
+.\run.bat
 ```
 
-Uma janela será aberta no seu computador mostrando o status do servidor e o link para compartilhamento.
+```bash
+./run.sh
+```
 
-## **📦 Como Gerar o Executável (.exe)**
+Por stack:
 
-O projeto inclui um script de build automatizado (`build.py`) que utiliza o PyInstaller para empacotar tudo em um único arquivo executável.
+```powershell
+.\python\run.bat
+.\csharp\run.bat
+```
 
-1. Abra o terminal na pasta do projeto.
-2. Execute o script de build:
+### Python (desenvolvimento)
 
-```python
+```powershell
+cd python
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python main.py
+```
+
+### Python (build .exe)
+
+```powershell
+cd python
 python build.py
+# → python/dist/SwiftSend.exe
 ```
 
-3. O executável `SwiftSend.exe` será gerado dentro da pasta `dist/`.
+### C# (Windows)
 
-**Nota:** O executável é "portátil", ou seja, você pode copiá-lo para outro computador e rodar sem precisar instalar Python.
+Requisitos: .NET 8 SDK e [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/).
 
-## **📖 Como Usar**
+```powershell
+.\csharp\run.bat
+```
 
-### **1\. Iniciando o Servidor**
+Publish single-file (Windows otimizado):
 
-Abra o aplicativo. Você verá o **Dashboard** com o endereço IP da sua máquina (ex: `http://192.168.0.15:5000`).
+```powershell
+dotnet publish csharp/SwiftSend/SwiftSend.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o csharp/dist
+```
 
-### **2\. Compartilhando Arquivos (Download)**
+## Como usar
 
-1. Clique em "Gerenciar Públicos" no aplicativo ou abra a pasta `arquivos_publicos` criada automaticamente.
-2. Arraste qualquer arquivo que deseja compartilhar para dentro dessa pasta.
-3. Qualquer pessoa que acessar o link do servidor verá esses arquivos disponíveis para download.
+1. Abra o app — o dashboard mostra o link (ex.: `http://192.168.0.15:5000`).
+2. Coloque arquivos em `arquivos_publicos/` (ou use **Gerenciar Públicos**).
+3. Na mesma rede, abra o link no navegador para baixar ou enviar.
+4. Uploads chegam em `arquivos_recebidos/`.
 
 ![Download view](images/download_view.png)
 
-### **3\. Recebendo Arquivos (Upload)**
-
-1. Envie o link do servidor (ex: `http://192.168.1.5:5000`) para a outra pessoa.
-2. No navegador dela, ela deve clicar em **"Enviar Arquivos"**.
-3. Ela pode selecionar múltiplos arquivos e enviá-los.
-4. Os arquivos aparecerão automaticamente na pasta `arquivos_recebidos` no seu computador.
-
 ![Upload view](images/upload_view.png)
 
-## **📂 Estrutura de Pastas**
+## Licença
 
-Após a primeira execução, o software criará automaticamente:
-
-- `arquivos_publicos/`: Coloque aqui o que você quer que os outros baixem.
-- `arquivos_recebidos/`: Aqui chegam os arquivos que enviam para você.
-
-## **📝 Licença**
-
-Este projeto é de código aberto e livre para uso pessoal e educacional.
+Uso pessoal e educacional.

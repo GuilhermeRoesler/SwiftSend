@@ -1,0 +1,7 @@
+﻿<Window x:Class="SwiftSend.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="SwiftSend - Transferência de Arquivos"
+        Height="700"
+        Width="900">
+</Window>

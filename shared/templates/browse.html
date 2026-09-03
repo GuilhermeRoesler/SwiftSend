@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SwiftSend — Arquivos</title>
+    <link rel="stylesheet" href="/static/css/app.css">
+    <link rel="icon" href="/static/icon.png" type="image/png">
+</head>
+<body class="flex flex-col h-screen">
+    <header class="site-header">
+        <div class="flex items-center gap-2 text-brand">
+            <span class="icon icon-xl" aria-hidden="true">⟳</span>
+            <h1 class="text-xl font-medium tracking-tight">SwiftSend</h1>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-auto p-4 md:p-8">
+        <div class="max-w-5xl mx-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-normal">Arquivos Disponíveis</h2>
+                <a href="/" class="btn-tonal text-sm">Voltar</a>
+            </div>
+
+            <div class="google-card overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Nome do Arquivo</th>
+                                <th>Tamanho</th>
+                                <th class="text-right">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y">
+                            {% for file in files %}
+                            <tr>
+                                <td class="flex items-center gap-3">
+                                    <span class="icon text-gray-400" aria-hidden="true">📄</span>
+                                    <span class="font-medium text-gray-700">{{ file.name }}</span>
+                                </td>
+                                <td class="text-gray-500 text-sm">{{ file.size }}</td>
+                                <td class="text-right">
+                                    <a href="/download/{{ file.name }}" class="text-blue-600 font-medium text-sm no-underline">
+                                        Baixar ↓
+                                    </a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="py-12 text-center text-gray-500">
+                                    <div class="icon icon-2xl text-gray-300 mb-2" aria-hidden="true">📁</div>
+                                    Nenhum arquivo público disponível no momento.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

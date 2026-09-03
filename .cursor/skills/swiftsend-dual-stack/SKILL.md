@@ -21,12 +21,12 @@ App desktop híbrido para transferir arquivos pesados na **rede local (LAN)** se
 
 Roteamento por `Host`: `localhost` / `127.0.0.1` → dashboard; caso contrário → home pública.
 
-## Estado atual vs alvo
+## Estado do repositório
 
 | Estado | Layout |
 |--------|--------|
-| **Atual (pré-migração)** | Monólito flat: `main.py`, `build.py`, templates embutidos |
-| **Alvo (pós-migração)** | `python/` + `csharp/` + `shared/` (UI única) |
+| **Atual (pós-migração)** | `python/` + `csharp/` + `shared/` (UI única) |
+| Legado | Monólito flat (`main.py` na raiz) — removido |
 
 Espelha o [AutoClicker](https://github.com/GuilhermeRoesler/AutoClicker) (`python/` + `cpp/`), com diferença crítica: **UI web fica em `shared/`** — não duplicar HTML entre stacks.
 
@@ -71,13 +71,8 @@ Espelha o [AutoClicker](https://github.com/GuilhermeRoesler/AutoClicker) (`pytho
 4. Strings de UI em **português**, alinhadas ao README.
 5. Após mudar API/pastas, verificar mentalmente: dashboard localhost → IP na LAN → upload → download → pastas no disco.
 
-## Migração (resumo)
+## Migração
 
-Ordem obrigatória — detalhes em [reference.md](reference.md):
+**Concluída.** Detalhes históricos e checklist em [reference.md](reference.md).
 
-1. Extrair templates/assets → `shared/`
-2. Mover código atual → `python/` e apontar para `shared/`
-3. Criar `run.bat` / `run.sh` (raiz → Python)
-4. Implementar `csharp/` com o mesmo contrato HTTP + WebView2
-5. Atualizar README (primária / secundária / builds)
-6. (Opcional) CI de release com artefato `windows-optimized` (C#)
+Pendente opcional: CI de release com artefato `windows-optimized` (C#).

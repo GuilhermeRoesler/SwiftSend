@@ -1,6 +1,17 @@
 venv
+**/venv/
 arquivos_publicos
 arquivos_recebidos
 dist
 build
+**/dist/
+**/build/
 *.spec
+**/bin/
+**/obj/
+.vs/
+*.user
+
+__pycache__/
+**/__pycache__/
+*.pyc

@@ -20,28 +20,28 @@ Não há autenticação, banco nem fila. É um utilitário LAN de arquivo + UI w
 
 ## 2. Stack
 
-### Primária (Python) — estado atual e alvo
+### Primária (Python)
 
 | Item | Detalhe |
 |------|---------|
 | Linguagem | Python 3.x |
 | HTTP | Flask (`threaded=True`, `0.0.0.0:5000`) |
 | Desktop | pywebview → `http://127.0.0.1:5000` |
-| UI (hoje) | Templates Jinja em strings dentro de `main.py` + Tailwind/Material via CDN |
-| UI (alvo) | Arquivos estáticos/templates em `shared/` |
-| Empacotamento | PyInstaller (`--onefile`, `--noconsole`) via `build.py` |
-| Deps atuais | `flask`, `pywebview`, `pyinstaller` |
+| UI | `shared/templates` + `shared/static` (CSS/JS locais, sem CDN) |
+| Empacotamento | PyInstaller via `python/build.py` |
+| Deps | `flask`, `pywebview`, `pyinstaller` |
 
-### Secundária (C#) — a implementar
+### Secundária (C#) — implementada
 
 | Item | Detalhe |
 |------|---------|
-| Runtime | .NET (LTS atual do projeto na época da implementação) |
-| HTTP | ASP.NET Core (Kestrel), mesmas rotas/pastas |
-| Desktop | WebView2 (WPF ou WinForms) apontando para localhost |
-| UI | Consome **`shared/`** (não reimplementar Material em XAML) |
-| Empacotamento | `dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true` |
-| Papel | Release Windows otimizado (análogo ao `windows-optimized.exe` do AutoClicker C++) |
+| Runtime | .NET 8 (`net8.0-windows`) |
+| HTTP | ASP.NET Core Minimal APIs + Kestrel |
+| Templates | Fluid.Core (sintaxe Liquid compatível com os HTML de `shared/`) |
+| Desktop | WPF + Microsoft.Web.WebView2 |
+| UI | Mesmo `shared/` |
+| Run | `csharp/run.bat` |
+| Publish | `dotnet publish ... -r win-x64 --self-contained true -p:PublishSingleFile=true` |
 
 ### Decisão de stack (histórico da conversa)
 
@@ -52,52 +52,33 @@ Não há autenticação, banco nem fila. É um utilitário LAN de arquivo + UI w
 
 ---
 
-## 3. Estrutura do repositório
-
-### 3.1 Atual (pré-migração)
+## 3. Estrutura do repositório (pós-migração)
 
 ```
 SwiftSend/
-├── main.py              # Flask + templates + pywebview (monólito)
-├── build.py             # PyInstaller
-├── requirements.txt
-├── README.md
-├── icon.png
-├── images/              # Screenshots do README
-├── arquivos_publicos/   # Runtime (gitignored)
-└── arquivos_recebidos/  # Runtime (gitignored)
-```
-
-Entrypoint real: `main.py` (README ainda pode citar `app.py` — inconsistência a corrigir na migração).
-
-### 3.2 Alvo (pós-migração)
-
-```
-SwiftSend/
-├── run.bat / run.sh           # Atalho → python/run.*
+├── run.bat / run.sh
 ├── python/
-│   ├── main.py                # Flask + pywebview (sem HTML embutido longo)
+│   ├── main.py
 │   ├── build.py
 │   ├── requirements.txt
-│   ├── run.bat / run.sh
-│   └── dist/                  # PyInstaller (não versionar)
+│   └── run.bat / run.sh
 ├── csharp/
-│   ├── SwiftSend.sln / *.csproj
-│   ├── Program.cs             # Kestrel + rotas
-│   ├── Desktop/               # Host WebView2 (opcional pasta)
-│   └── run.bat                # Windows: build se preciso + run
+│   ├── SwiftSend.sln
+│   ├── run.bat / run.sh
+│   └── SwiftSend/             # WPF + Kestrel + Fluid + WebView2
 ├── shared/
-│   ├── static/                # css, js, fonts, icon (preferir local, sem CDN)
-│   ├── templates/             # dashboard + home pública (Jinja ou HTML estático)
-│   └── README.md              # (opcional) contrato da UI
-├── assets/ ou images/         # Screenshots / marketing
-├── .cursor/
-│   ├── rules/swiftsend-context.mdc
-│   └── skills/swiftsend-dual-stack/
-└── README.md
+│   ├── static/css/app.css
+│   ├── static/js/upload.js
+│   ├── static/icon.png
+│   └── templates/             # dashboard, home, browse, upload (Jinja/Liquid)
+├── images/
+├── icon.png
+├── arquivos_publicos/         # Runtime (gitignored) — na raiz do repo
+├── arquivos_recebidos/
+└── .cursor/...
 ```
 
-Pastas de runtime (`arquivos_*`) continuam relativas ao **cwd** do processo (documentar: rodar a partir da pasta esperada ou usar base path explícito igual nas duas stacks).
+`DATA_ROOT` = raiz do repo (Python: parent de `python/`; C#: sobe diretórios até achar `shared/templates`, ou `SWIFTSEND_ROOT`).
 
 ---
 
@@ -152,17 +133,16 @@ Sem IPC nativo: comunicação = HTTP. Thread/task do servidor + UI WebView no pr
 
 ## 6. Processo de migração (checklist)
 
-Copiar e marcar progresso ao executar a migração:
-
 ```
 Migração SwiftSend dual-stack:
-- [ ] Fase 0 — Preparação
-- [ ] Fase 1 — Extrair shared/
-- [ ] Fase 2 — Mover Python para python/
-- [ ] Fase 3 — Run scripts raiz
-- [ ] Fase 4 — Implementar csharp/
-- [ ] Fase 5 — Paridade de contrato
-- [ ] Fase 6 — Docs + (opcional) CI
+- [x] Fase 0 — Preparação
+- [x] Fase 1 — Extrair shared/
+- [x] Fase 2 — Mover Python para python/
+- [x] Fase 3 — Run scripts raiz
+- [x] Fase 4 — Implementar csharp/
+- [x] Fase 5 — Paridade de contrato
+- [x] Fase 6 — Docs
+- [ ] (Opcional) CI release windows-optimized
 ```
 
 ### Fase 0 — Preparação

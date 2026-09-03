@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SwiftSend</title>
+    <link rel="stylesheet" href="/static/css/app.css">
+    <link rel="icon" href="/static/icon.png" type="image/png">
+</head>
+<body class="flex flex-col h-screen">
+    <header class="site-header">
+        <div class="flex items-center gap-2 text-brand">
+            <span class="icon icon-xl" aria-hidden="true">⟳</span>
+            <h1 class="text-xl font-medium tracking-tight">SwiftSend</h1>
+        </div>
+        {% if is_desktop %}
+        <div class="badge-url">
+            <span class="icon" aria-hidden="true">📶</span>
+            {{ base_url }}
+        </div>
+        {% endif %}
+    </header>
+
+    <main class="flex-1 overflow-auto p-4 md:p-8">
+        <div class="max-w-5xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="google-card p-6 flex flex-col justify-between h-64">
+                    <div>
+                        <h2 class="text-2xl font-normal mb-2">Servidor Ativo</h2>
+                        <p class="text-gray-500 mb-6">Seus arquivos estão acessíveis na rede local.</p>
+                        <div class="bg-gray-100 p-4 rounded-xl flex items-center justify-between">
+                            <code class="text-lg text-gray-700 select-all">{{ base_url }}</code>
+                            <button type="button" onclick="navigator.clipboard.writeText('{{ base_url }}')" class="copy-btn" title="Copiar">
+                                <span class="icon" aria-hidden="true">📋</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 mt-4">
+                        <a href="/upload_manager" class="btn-tonal flex-1">📂 Abrir Pasta Recebidos</a>
+                        <a href="/public_manager" class="btn-tonal flex-1">🌐 Gerenciar Públicos</a>
+                    </div>
+                </div>
+
+                <div class="google-card p-6 flex flex-col justify-center items-center h-64 text-center">
+                    <div class="icon-circle sm bg-blue-100 text-blue-600 mb-4">
+                        <span class="icon icon-xl" aria-hidden="true">⬇</span>
+                    </div>
+                    <h3 class="text-4xl font-normal text-gray-800">{{ received_count }}</h3>
+                    <p class="text-gray-500">Arquivos Recebidos</p>
+                    <p class="text-sm text-gray-400 mt-2">Salvo em: {{ upload_path }}</p>
+                </div>
+            </div>
+
+            <div class="mt-8">
+                <h3 class="text-lg font-medium mb-4 ml-1">Como usar</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="p-4 rounded-2xl bg-white border border-gray-100">
+                        <div class="text-blue-600 font-bold mb-1">Passo 1</div>
+                        <p class="text-gray-600 text-sm">Copie o endereço IP acima.</p>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-white border border-gray-100">
+                        <div class="text-blue-600 font-bold mb-1">Passo 2</div>
+                        <p class="text-gray-600 text-sm">Envie para quem estiver na mesma rede Wi-Fi.</p>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-white border border-gray-100">
+                        <div class="text-blue-600 font-bold mb-1">Passo 3</div>
+                        <p class="text-gray-600 text-sm">Eles podem baixar seus arquivos públicos ou enviar arquivos para você.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SwiftSend</title>
+    <link rel="stylesheet" href="/static/css/app.css">
+    <link rel="icon" href="/static/icon.png" type="image/png">
+</head>
+<body class="flex flex-col h-screen">
+    <header class="site-header">
+        <div class="flex items-center gap-2 text-brand">
+            <span class="icon icon-xl" aria-hidden="true">⟳</span>
+            <h1 class="text-xl font-medium tracking-tight">SwiftSend</h1>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-auto p-4 md:p-8">
+        <div class="max-w-5xl mx-auto">
+            <div class="text-center mb-10">
+                <h2 class="text-3xl font-normal text-gray-800">Compartilhamento Local</h2>
+                <p class="text-gray-500 mt-2">Escolha uma ação abaixo</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+                <a href="/browse" class="google-card p-8 flex flex-col items-center text-center no-underline">
+                    <div class="icon-circle lg bg-green-50 text-green-600 mb-6">
+                        <span class="icon icon-2xl" aria-hidden="true">⬇</span>
+                    </div>
+                    <h3 class="text-xl font-medium text-gray-800">Baixar Arquivos</h3>
+                    <p class="text-gray-500 mt-2 text-sm">Acesse arquivos disponibilizados pelo host.</p>
+                </a>
+
+                <a href="/upload" class="google-card p-8 flex flex-col items-center text-center no-underline">
+                    <div class="icon-circle lg bg-blue-50 text-blue-600 mb-6">
+                        <span class="icon icon-2xl" aria-hidden="true">⬆</span>
+                    </div>
+                    <h3 class="text-xl font-medium text-gray-800">Enviar Arquivos</h3>
+                    <p class="text-gray-500 mt-2 text-sm">Envie arquivos pesados para o host.</p>
+                </a>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
