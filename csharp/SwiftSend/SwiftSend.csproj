@@ -8,6 +8,7 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>SwiftSend</AssemblyName>
     <RootNamespace>SwiftSend</RootNamespace>
+    <ApplicationIcon>..\..\icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

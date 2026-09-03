@@ -74,6 +74,75 @@ def is_desktop_host() -> bool:
     return "localhost" in host_header or "127.0.0.1" in host_header
 
 
+def resolve_window_icon() -> str | None:
+    """Ícone nativo da janela/taskbar (pywebview). No Windows prefira .ico."""
+    candidates: list[Path] = []
+    if sys.platform == "win32":
+        candidates.extend(
+            (
+                DATA_ROOT / "icon.ico",
+                SHARED_DIR / "static" / "icon.ico",
+                APP_ROOT / "icon.ico",
+            )
+        )
+    candidates.extend(
+        (
+            SHARED_DIR / "static" / "icon.png",
+            DATA_ROOT / "icon.png",
+            APP_ROOT / "icon.png",
+        )
+    )
+    for path in candidates:
+        if path.is_file():
+            return str(path)
+    return None
+
+
+def configure_windows_app_identity() -> None:
+    """Evita que a taskbar use o ícone do python.exe ao rodar via run.bat."""
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(  # type: ignore[attr-defined]
+            "SwiftSend.LocalTransfer"
+        )
+    except Exception:
+        pass
+
+
+def force_windows_taskbar_icon(window, icon_path: str | None) -> None:
+    """Garante ICON_SMALL + ICON_BIG (taskbar/Alt+Tab) após a janela nativa existir."""
+    if sys.platform != "win32" or not icon_path:
+        return
+    try:
+        import ctypes
+
+        native = getattr(window, "native", None)
+        if native is None:
+            return
+        hwnd = int(native.Handle.ToInt32())
+        user32 = ctypes.windll.user32
+        image_icon = 1
+        lr_loadfromfile = 0x0010
+        wm_seticon = 0x0080
+
+        def load(size: int) -> int:
+            return int(
+                user32.LoadImageW(None, icon_path, image_icon, size, size, lr_loadfromfile)
+            )
+
+        small = load(16)
+        big = load(32)
+        if small:
+            user32.SendMessageW(hwnd, wm_seticon, 0, small)
+        if big:
+            user32.SendMessageW(hwnd, wm_seticon, 1, big)
+    except Exception:
+        pass
+
+
 def open_folder(path: Path) -> None:
     path_str = str(path)
     if sys.platform == "win32":
@@ -155,6 +224,8 @@ def start_server():
 if __name__ == "__main__":
     import webview
 
+    configure_windows_app_identity()
+
     t = threading.Thread(target=start_server, daemon=True)
     t.start()
 
@@ -164,10 +235,12 @@ if __name__ == "__main__":
     print(f"Pasta Recebidos: {UPLOAD_FOLDER}")
     print(f"Shared: {SHARED_DIR}")
 
-    webview.create_window(
+    icon_path = resolve_window_icon()
+    window = webview.create_window(
         "SwiftSend - Transferência de Arquivos",
         f"http://127.0.0.1:{PORT}",
         width=900,
         height=700,
     )
-    webview.start()
+    window.events.shown += lambda: force_windows_taskbar_icon(window, icon_path)
+    webview.start(icon=icon_path)
