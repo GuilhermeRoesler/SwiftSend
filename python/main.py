@@ -257,11 +257,15 @@ if __name__ == "__main__":
     print(f"Shared: {SHARED_DIR}")
 
     icon_path = resolve_window_icon()
+    # Centraliza no monitor principal (x/y omitidos + screen).
+    screens = webview.screens
+    primary_screen = screens[0] if screens else None
     window = webview.create_window(
         "SwiftSend - Transferência de Arquivos",
         f"http://127.0.0.1:{PORT}",
         width=900,
         height=700,
+        screen=primary_screen,
     )
     window.events.shown += lambda: force_windows_taskbar_icon(window, icon_path)
     webview.start(icon=icon_path)

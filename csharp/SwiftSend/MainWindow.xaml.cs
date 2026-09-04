@@ -13,6 +13,7 @@ public partial class MainWindow : Window
         Title = "SwiftSend - Transferência de Arquivos";
         Width = 900;
         Height = 700;
+        WindowStartupLocation = WindowStartupLocation.CenterScreen;
         Content = _webView;
         Loaded += OnLoaded;
     }
