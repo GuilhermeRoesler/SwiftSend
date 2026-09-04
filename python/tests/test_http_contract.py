@@ -97,9 +97,111 @@ def test_download_rejects_path_traversal(client, folders):
     assert response.status_code in (404, 400)
 
 
-def test_manager_routes_redirect(client):
-    assert client.get("/upload_manager").status_code in (301, 302)
-    assert client.get("/public_manager").status_code in (301, 302)
+def test_manager_pages_on_localhost(client, folders):
+    upload, public = folders
+    (upload / "recv.txt").write_text("a", encoding="utf-8")
+    (public / "pub.txt").write_text("b", encoding="utf-8")
+
+    received = client.get("/upload_manager", headers={"Host": "127.0.0.1:5000"})
+    assert received.status_code == 200
+    body = received.get_data(as_text=True)
+    assert "Recebidos" in body
+    assert "recv.txt" in body
+    assert 'data-folder="received"' in body
+
+    publics = client.get("/public_manager", headers={"Host": "127.0.0.1:5000"})
+    assert publics.status_code == 200
+    body = publics.get_data(as_text=True)
+    assert "Públicos" in body
+    assert "pub.txt" in body
+    assert 'data-folder="public"' in body
+
+
+def test_manager_pages_redirect_on_lan(client):
+    assert client.get("/upload_manager", headers={"Host": "192.168.0.10:5000"}).status_code in (
+        301,
+        302,
+    )
+    assert client.get("/public_manager", headers={"Host": "192.168.0.10:5000"}).status_code in (
+        301,
+        302,
+    )
+
+
+def test_host_apis_forbidden_on_lan(client):
+    headers = {"Host": "192.168.0.10:5000"}
+    assert client.get("/api/host/open?folder=received", headers=headers).status_code == 403
+    assert (
+        client.post(
+            "/api/host/delete",
+            json={"folder": "received", "name": "x.txt"},
+            headers=headers,
+        ).status_code
+        == 403
+    )
+    assert (
+        client.post(
+            "/api/host/rename",
+            json={"folder": "received", "name": "a.txt", "new_name": "b.txt"},
+            headers=headers,
+        ).status_code
+        == 403
+    )
+
+
+def test_host_delete_rename_upload(client, folders):
+    upload, public = folders
+    host = {"Host": "127.0.0.1:5000"}
+    (upload / "old.txt").write_text("keep", encoding="utf-8")
+    (public / "share.txt").write_text("pub", encoding="utf-8")
+
+    renamed = client.post(
+        "/api/host/rename",
+        json={"folder": "received", "name": "old.txt", "new_name": "novo.txt"},
+        headers=host,
+    )
+    assert renamed.status_code == 200
+    assert renamed.get_json() == {"success": True}
+    assert (upload / "novo.txt").is_file()
+    assert not (upload / "old.txt").exists()
+
+    deleted = client.post(
+        "/api/host/delete",
+        json={"folder": "public", "name": "share.txt"},
+        headers=host,
+    )
+    assert deleted.status_code == 200
+    assert not (public / "share.txt").exists()
+
+    data = {"file": (BytesIO(b"hello"), "foto.png"), "folder": "public"}
+    uploaded = client.post(
+        "/api/host/upload",
+        data=data,
+        content_type="multipart/form-data",
+        headers=host,
+    )
+    assert uploaded.status_code == 200
+    assert (public / "foto.png").read_bytes() == b"hello"
+
+
+def test_host_open_folder(client):
+    host = {"Host": "127.0.0.1:5000"}
+    response = client.get("/api/host/open?folder=received", headers=host)
+    assert response.status_code == 200
+    assert response.get_json() == {"success": True}
+
+
+def test_host_rename_conflict(client, folders):
+    upload, _public = folders
+    host = {"Host": "127.0.0.1:5000"}
+    (upload / "a.txt").write_text("1", encoding="utf-8")
+    (upload / "b.txt").write_text("2", encoding="utf-8")
+    response = client.post(
+        "/api/host/rename",
+        json={"folder": "received", "name": "a.txt", "new_name": "b.txt"},
+        headers=host,
+    )
+    assert response.status_code == 409
 
 
 def test_static_css_served(client):

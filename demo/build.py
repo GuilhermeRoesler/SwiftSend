@@ -31,6 +31,10 @@ DEMO_BANNER = """
     <a href="browse.html">Baixar</a>
     ·
     <a href="upload.html">Enviar</a>
+    ·
+    <a href="received.html">Recebidos</a>
+    ·
+    <a href="publics.html">Públicos</a>
   </span>
 </div>
 <style>
@@ -107,8 +111,8 @@ def rewrite_asset_paths(html: str) -> str:
     html = html.replace('href="/browse"', 'href="browse.html"')
     html = html.replace('href="/upload"', 'href="upload.html"')
     html = html.replace('href="/"', 'href="index.html"')
-    html = html.replace('href="/upload_manager"', 'href="#" data-demo-action')
-    html = html.replace('href="/public_manager"', 'href="#" data-demo-action')
+    html = html.replace('href="/upload_manager"', 'href="received.html"')
+    html = html.replace('href="/public_manager"', 'href="publics.html"')
     html = re.sub(
         r'href="/download/[^"]*"',
         'href="#" data-demo-action',
@@ -116,6 +120,7 @@ def rewrite_asset_paths(html: str) -> str:
     )
     # Demo usa JS próprio (sem POST real).
     html = html.replace('src="static/js/upload.js"', 'src="static/js/upload-demo.js"')
+    html = html.replace('src="static/js/manager.js"', 'src="static/js/manager-demo.js"')
     return html
 
 
@@ -161,12 +166,33 @@ def render_pages(env: Environment) -> dict[str, str]:
             files=MOCK_FILES,
         ),
         "upload.html": env.get_template("upload.html").render(is_desktop=False),
+        "received.html": env.get_template("manager.html").render(
+            is_desktop=True,
+            folder="received",
+            page_title="Recebidos",
+            eyebrow="Host",
+            eyebrow_icon="inbox",
+            page_sub="Arquivos enviados pelos visitantes — apague, renomeie ou adicione aqui.",
+            empty_hint="Nada recebido ainda.",
+            files=MOCK_FILES[:2],
+        ),
+        "publics.html": env.get_template("manager.html").render(
+            is_desktop=True,
+            folder="public",
+            page_title="Públicos",
+            eyebrow="Host",
+            eyebrow_icon="folder_shared",
+            page_sub="O que os visitantes veem em Baixar — gerencie sem sair do app.",
+            empty_hint="Nada público ainda.",
+            files=MOCK_FILES,
+        ),
     }
     out = {}
     for name, html in pages.items():
         rewritten = rewrite_asset_paths(html)
         out[name] = inject_demo_chrome(
-            rewritten, desktop_frame=(name == "dashboard.html")
+            rewritten,
+            desktop_frame=(name in ("dashboard.html", "received.html", "publics.html")),
         )
     return out
 
@@ -186,6 +212,8 @@ def copy_static() -> None:
 
     demo_js = ROOT / "upload-demo.js"
     shutil.copy2(demo_js, dest / "js" / "upload-demo.js")
+    manager_demo = ROOT / "manager-demo.js"
+    shutil.copy2(manager_demo, dest / "js" / "manager-demo.js")
 
 
 def build() -> None:

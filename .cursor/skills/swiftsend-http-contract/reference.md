@@ -20,14 +20,18 @@
 - Resolve sob `arquivos_publicos/` apenas (sem path traversal).
 - Resposta: `Content-Disposition: attachment`.
 
-## Abrir pastas (`*_manager`)
+## Abrir pastas / gerenciador host
 
-| Stack | Comportamento |
-|-------|----------------|
-| Python | Windows `os.startfile` / macOS `open` / Linux `xdg-open` |
-| C# | Windows `explorer.exe` (secundária é Windows-first) |
+| Rota | Comportamento |
+|------|----------------|
+| `GET /upload_manager` | Host (localhost): renderiza `manager.html` (Recebidos). LAN: redirect `/`. |
+| `GET /public_manager` | Host: `manager.html` (Públicos). LAN: redirect `/`. |
+| `GET /api/host/open?folder=received\|public` | Host: abre pasta no SO (Python `startfile`/`open`/`xdg-open`; C# `explorer`). JSON `{success:true}`. |
+| `POST /api/host/delete` | Host: `{ "folder", "name" }` — apaga arquivo sob a pasta gerenciada. |
+| `POST /api/host/rename` | Host: `{ "folder", "name", "new_name" }` — 409 se destino existe. |
+| `POST /api/host/upload` | Host: multipart `file` + form `folder` — grava com nome sanitizado (sem timestamp); colisão → `nome_2.ext`. |
 
-Ambas redirecionam para `/` após disparar o gerenciador de arquivos.
+Todas as rotas `/api/host/*` e as páginas `*_manager` exigem `Host` com `localhost` ou `127.0.0.1` (403 / redirect caso contrário).
 
 ## `DATA_ROOT`
 
@@ -54,5 +58,6 @@ HTML deve permanecer compatível com **ambos** (`{% %}` / `{{ }}` usados hoje).
 - [ ] Upload grava em `arquivos_recebidos`
 - [ ] Arquivo em `arquivos_publicos` lista e baixa
 - [ ] Limite 16 GB alinhado (Flask + Kestrel MultipartBodyLengthLimit)
-- [ ] Abrir pastas no host (Windows) funciona
+- [ ] Abrir pastas no host (Windows) via “Abrir no SO” nas telas manager
+- [ ] Telas `/upload_manager` e `/public_manager` só no localhost; APIs `/api/host/*` retornam 403 na LAN
 - [ ] `/static` e ícone consistentes

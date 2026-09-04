@@ -488,10 +488,143 @@ a {
   transform: translateY(-1px);
 }
 
+.btn-icon {
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.btn-icon:hover {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.btn-icon--danger:hover {
+  background: #ffe4e6;
+  border-color: #fecdd3;
+  color: #be123c;
+}
+
+.header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.header-start {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.4rem 0.65rem 0.4rem 0.45rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.btn-back .material-symbols-outlined {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.btn-back:hover {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.75);
+  border-color: var(--line);
+}
+
+.file-name-wrap {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.file-rename-input {
+  width: 100%;
+  min-width: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--brand);
+  border-radius: 8px;
+  padding: 0.35rem 0.55rem;
+  outline: none;
+}
+
+.file-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  opacity: 0.72;
+  transition: opacity 0.15s;
+}
+
+.file-row:hover .file-actions,
+.file-row.is-renaming .file-actions {
+  opacity: 1;
+}
+
+.file-row.is-renaming {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.manager-drop.drop-zone--compact {
+  padding: 1.15rem 1.25rem;
+  margin-bottom: 0;
+}
+
+.manager-drop-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  text-align: left;
+}
+
+.manager-drop.is-busy {
+  pointer-events: none;
+  opacity: 0.65;
+}
+
+.transfer-meter--compact {
+  padding-top: 0.85rem;
+}
+
+.transfer-pct--sm {
+  font-size: 1.35rem;
+}
+
+.mt-0\.5 { margin-top: 0.125rem; }
+
 .btn-primary:focus-visible,
 .btn-secondary:focus-visible,
 .btn-tonal:focus-visible,
 .btn-ghost:focus-visible,
+.btn-back:focus-visible,
+.btn-icon:focus-visible,
 .copy-btn:focus-visible,
 .btn-download:focus-visible,
 .action-primary:focus-visible,
@@ -1298,13 +1431,24 @@ a {
     gap: 0.35rem 0.85rem;
   }
   .file-row .file-icon { grid-area: icon; align-self: center; }
-  .file-row .file-name { grid-area: name; }
+  .file-row .file-name,
+  .file-row .file-name-wrap { grid-area: name; }
   .file-row .file-meta {
     grid-area: meta;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
+  }
+
+  .file-actions {
+    opacity: 1;
+  }
+
+  .manager-drop-inner {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.45rem;
   }
 
   .lan-beam {

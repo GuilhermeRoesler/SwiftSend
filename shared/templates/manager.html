@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SwiftSend — {{ page_title }}</title>
+    <link rel="stylesheet" href="/static/css/app.css">
+    <link rel="icon" href="/static/icon.png" type="image/png">
+</head>
+<body class="page-host flex flex-col h-screen" data-folder="{{ folder }}">
+    <header class="site-header">
+        <div class="header-start">
+            <a href="/" class="btn-back" aria-label="Voltar ao painel">
+                <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+                Voltar
+            </a>
+            <a class="brand-mark" href="/">
+                <img src="/static/icon.png" width="32" height="32" alt="">
+                <span class="brand-name">SwiftSend</span>
+            </a>
+        </div>
+        <button type="button" class="btn-ghost" id="openInOsBtn" title="Abrir pasta no sistema">
+            <span class="material-symbols-outlined text-sm" aria-hidden="true">folder_open</span>
+            Abrir no SO
+        </button>
+    </header>
+
+    <main class="flex-1 overflow-auto p-4 md:p-8">
+        <div class="max-w-3xl mx-auto page-enter">
+            <div class="page-intro mb-6">
+                <p class="eyebrow mb-2">
+                    <span class="material-symbols-outlined text-sm" aria-hidden="true">{{ eyebrow_icon }}</span>
+                    {{ eyebrow }}
+                </p>
+                <h1 class="page-title">{{ page_title }}</h1>
+                <p class="page-sub">{{ page_sub }}</p>
+            </div>
+
+            <div class="manager-drop drop-zone drop-zone--compact" id="dropZone">
+                <input type="file" id="fileInput" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" multiple>
+                <div class="pointer-events-none manager-drop-inner">
+                    <span class="material-symbols-outlined text-brand" aria-hidden="true">upload_file</span>
+                    <div>
+                        <p class="font-semibold text-ink">Arraste arquivos ou clique para adicionar</p>
+                        <p class="text-sm text-muted mt-0.5">Salvos direto nesta pasta</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="progressContainer" class="hidden transfer-meter transfer-meter--compact" aria-live="polite">
+                <div class="transfer-meter-top">
+                    <span id="progressPct" class="transfer-pct transfer-pct--sm">0%</span>
+                    <div class="transfer-speed-block">
+                        <span id="progressSpeed" class="transfer-speed">—</span>
+                        <span id="progressEta" class="transfer-eta">ETA —</span>
+                    </div>
+                </div>
+                <div class="progress-track">
+                    <div id="progressBar" class="progress-bar"></div>
+                </div>
+                <p id="statusText" class="transfer-bytes"></p>
+            </div>
+
+            <div class="file-surface mt-4">
+                <div class="file-list" id="fileList">
+                    {% for file in files %}
+                    <div class="file-row" data-filename="{{ file.name }}">
+                        <span class="file-icon" data-file-icon aria-hidden="true">
+                            <span class="material-symbols-outlined">draft</span>
+                        </span>
+                        <div class="file-name-wrap">
+                            <span class="file-name" title="{{ file.name }}">{{ file.name }}</span>
+                            <input type="text" class="file-rename-input hidden" value="{{ file.name }}" spellcheck="false" aria-label="Novo nome">
+                        </div>
+                        <div class="file-meta flex items-center gap-2 justify-end">
+                            <span class="file-size">{{ file.size }}</span>
+                            <div class="file-actions">
+                                <button type="button" class="btn-icon" data-action="rename" title="Renomear" aria-label="Renomear">
+                                    <span class="material-symbols-outlined text-sm" aria-hidden="true">edit</span>
+                                </button>
+                                <button type="button" class="btn-icon btn-icon--danger" data-action="delete" title="Apagar" aria-label="Apagar">
+                                    <span class="material-symbols-outlined text-sm" aria-hidden="true">delete</span>
+                                </button>
+                                <button type="button" class="btn-icon hidden" data-action="save-rename" title="Salvar" aria-label="Salvar nome">
+                                    <span class="material-symbols-outlined text-sm" aria-hidden="true">check</span>
+                                </button>
+                                <button type="button" class="btn-icon hidden" data-action="cancel-rename" title="Cancelar" aria-label="Cancelar">
+                                    <span class="material-symbols-outlined text-sm" aria-hidden="true">close</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="empty-state" id="emptyState">
+                        <div class="empty-icon" aria-hidden="true">
+                            <span class="material-symbols-outlined text-4xl">folder_off</span>
+                        </div>
+                        <h3>Pasta vazia</h3>
+                        <p>{{ empty_hint }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </main>
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/manager.js"></script>
+</body>
+</html>

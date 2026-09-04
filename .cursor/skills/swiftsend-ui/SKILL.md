@@ -16,11 +16,13 @@ shared/
 │   ├── dashboard.html   # host (localhost)
 │   ├── home.html        # visitante
 │   ├── browse.html      # lista / download
-│   └── upload.html      # envio
+│   ├── upload.html      # envio
+│   └── manager.html     # host: Recebidos / Públicos (listar, DnD, renomear, apagar)
 ├── static/
 │   ├── css/app.css
 │   ├── js/app.js        # copy, QR, ícones por tipo
 │   ├── js/upload.js
+│   ├── js/manager.js    # ações host + upload para pastas gerenciadas
 │   ├── js/qrcode.js     # QR local (sem CDN)
 │   ├── fonts/           # Sora + JetBrains Mono + Material Symbols
 │   ├── icon.png
@@ -45,6 +47,7 @@ Demo estática (GitHub Pages): `python demo/build.py` → `demo/dist/` (template
 | `home.html` | Visitante | Hero de marca (wordmark) + cena LAN + Baixar / Enviar |
 | `browse.html` | Visitante | Lista flat com ícone por tipo + download |
 | `upload.html` | Visitante | Drop zone + transfer meter (%, velocidade, ETA) + sucesso |
+| `manager.html` | Host | Espelha Recebidos ou Públicos: DnD, renomear, apagar, abrir no SO |
 
 ## Ao editar
 

@@ -16,9 +16,9 @@ App desktop híbrido: o host sobe um servidor HTTP na rede local; a UI web serve
 
 1. Host inicia o app → HTTP em `0.0.0.0:5000` + janela WebView em `http://127.0.0.1:5000` (dashboard).
 2. Dashboard exibe o link LAN (`http://<IP>:5000`).
-3. Host coloca arquivos em `arquivos_publicos/` (ou via “Gerenciar Públicos”).
+3. Host coloca arquivos em `arquivos_publicos/` (ou via tela **Públicos** no dashboard).
 4. Visitantes na mesma rede abrem o link → home pública → baixar (`/browse`) ou enviar (`/upload`).
-5. Uploads gravam em `arquivos_recebidos/`.
+5. Uploads gravam em `arquivos_recebidos/` (host vê/gerencia na tela **Recebidos**).
 
 ## Direção dos arquivos
 

@@ -163,6 +163,69 @@ def open_folder(path: Path) -> None:
         os.system(f'xdg-open "{path_str}"')
 
 
+def sanitize_basename(name: str) -> str:
+    """Nome de arquivo seguro (sem path); usado nas APIs host."""
+    base = Path(name).name.strip()
+    if not base or base in (".", ".."):
+        return ""
+    for ch in '<>:"/\\|?*\0':
+        base = base.replace(ch, "_")
+    return base or "arquivo"
+
+
+def resolve_managed_folder(kind: str) -> Path | None:
+    if kind == "received":
+        return UPLOAD_FOLDER
+    if kind == "public":
+        return PUBLIC_FOLDER
+    return None
+
+
+def safe_path_in_folder(folder: Path, name: str) -> Path | None:
+    safe = sanitize_basename(name)
+    if not safe:
+        return None
+    folder_resolved = folder.resolve()
+    full = (folder / safe).resolve()
+    try:
+        full.relative_to(folder_resolved)
+    except ValueError:
+        return None
+    return full
+
+
+def unique_dest(folder: Path, filename: str) -> Path:
+    dest = folder / filename
+    if not dest.exists():
+        return dest
+    stem = dest.stem
+    suffix = dest.suffix
+    n = 2
+    while True:
+        candidate = folder / f"{stem}_{n}{suffix}"
+        if not candidate.exists():
+            return candidate
+        n += 1
+
+
+def list_folder_files(folder: Path) -> list[dict[str, str]]:
+    files_data: list[dict[str, str]] = []
+    if not folder.exists():
+        return files_data
+    try:
+        for f in sorted(os.listdir(folder)):
+            fp = folder / f
+            if fp.is_file():
+                files_data.append({"name": f, "size": get_file_size(str(fp))})
+    except OSError as e:
+        print(e)
+    return files_data
+
+
+def host_forbidden():
+    return jsonify({"error": "Forbidden"}), 403
+
+
 @app.route("/")
 def index():
     if is_desktop_host():
@@ -178,28 +241,122 @@ def index():
 
 
 @app.route("/upload_manager")
-def open_upload_folder():
-    open_folder(UPLOAD_FOLDER)
-    return redirect(url_for("index"))
+def upload_manager():
+    if not is_desktop_host():
+        return redirect(url_for("index"))
+    return render_template(
+        "manager.html",
+        folder="received",
+        page_title="Recebidos",
+        eyebrow="Host",
+        eyebrow_icon="inbox",
+        page_sub="Arquivos enviados pelos visitantes — apague, renomeie ou adicione aqui.",
+        empty_hint="Nada recebido ainda. Visitantes enviam pela página Enviar, ou arraste arquivos acima.",
+        files=list_folder_files(UPLOAD_FOLDER),
+        is_desktop=True,
+    )
 
 
 @app.route("/public_manager")
-def open_public_folder():
-    open_folder(PUBLIC_FOLDER)
-    return redirect(url_for("index"))
+def public_manager():
+    if not is_desktop_host():
+        return redirect(url_for("index"))
+    return render_template(
+        "manager.html",
+        folder="public",
+        page_title="Públicos",
+        eyebrow="Host",
+        eyebrow_icon="folder_shared",
+        page_sub="O que os visitantes veem em Baixar — gerencie sem sair do app.",
+        empty_hint="Nada público ainda. Arraste arquivos acima para disponibilizar na rede.",
+        files=list_folder_files(PUBLIC_FOLDER),
+        is_desktop=True,
+    )
+
+
+@app.route("/api/host/open")
+def api_host_open():
+    if not is_desktop_host():
+        return host_forbidden()
+    folder = resolve_managed_folder(request.args.get("folder") or "")
+    if folder is None:
+        return jsonify({"error": "Pasta inválida"}), 400
+    open_folder(folder)
+    return jsonify({"success": True})
+
+
+@app.route("/api/host/delete", methods=["POST"])
+def api_host_delete():
+    if not is_desktop_host():
+        return host_forbidden()
+    data = request.get_json(silent=True) or {}
+    folder = resolve_managed_folder(str(data.get("folder") or ""))
+    target = safe_path_in_folder(folder, str(data.get("name") or "")) if folder else None
+    if folder is None or target is None:
+        return jsonify({"error": "Pedido inválido"}), 400
+    if not target.is_file():
+        return jsonify({"error": "Arquivo não encontrado"}), 404
+    try:
+        target.unlink()
+    except OSError:
+        return jsonify({"error": "Não foi possível apagar"}), 400
+    return jsonify({"success": True})
+
+
+@app.route("/api/host/rename", methods=["POST"])
+def api_host_rename():
+    if not is_desktop_host():
+        return host_forbidden()
+    data = request.get_json(silent=True) or {}
+    folder = resolve_managed_folder(str(data.get("folder") or ""))
+    src = safe_path_in_folder(folder, str(data.get("name") or "")) if folder else None
+    new_name = sanitize_basename(str(data.get("new_name") or ""))
+    if folder is None or src is None or not new_name:
+        return jsonify({"error": "Pedido inválido"}), 400
+    if not src.is_file():
+        return jsonify({"error": "Arquivo não encontrado"}), 404
+    dest = safe_path_in_folder(folder, new_name)
+    if dest is None:
+        return jsonify({"error": "Nome inválido"}), 400
+    if dest.exists():
+        return jsonify({"error": "Já existe um arquivo com esse nome"}), 409
+    try:
+        src.rename(dest)
+    except OSError:
+        return jsonify({"error": "Não foi possível renomear"}), 400
+    return jsonify({"success": True})
+
+
+@app.route("/api/host/upload", methods=["POST"])
+def api_host_upload():
+    if not is_desktop_host():
+        return host_forbidden()
+    folder_kind = request.form.get("folder") or ""
+    folder = resolve_managed_folder(folder_kind)
+    if folder is None:
+        return jsonify({"error": "Pasta inválida"}), 400
+    if "file" not in request.files:
+        return jsonify({"error": "No file part"}), 400
+
+    saved = 0
+    for file in request.files.getlist("file"):
+        if not file.filename:
+            continue
+        filename = sanitize_basename(file.filename)
+        if not filename:
+            continue
+        dest = unique_dest(folder, filename)
+        file.save(str(dest))
+        saved += 1
+
+    if saved == 0:
+        return jsonify({"error": "No file part"}), 400
+    return jsonify({"success": True}), 200
 
 
 @app.route("/browse")
 def browse():
-    files_data = []
-    try:
-        for f in sorted(os.listdir(app.config["PUBLIC_FOLDER"])):
-            fp = os.path.join(app.config["PUBLIC_FOLDER"], f)
-            if os.path.isfile(fp):
-                files_data.append({"name": f, "size": get_file_size(fp)})
-    except OSError as e:
-        print(e)
-    return render_template("browse.html", files=files_data, is_desktop=False)
+    return render_template("browse.html", files=list_folder_files(PUBLIC_FOLDER), is_desktop=False)
 
 
 @app.route("/upload")

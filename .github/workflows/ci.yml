@@ -79,8 +79,10 @@ jobs:
             shared/templates/home.html \
             shared/templates/browse.html \
             shared/templates/upload.html \
+            shared/templates/manager.html \
             shared/static/css/app.css \
             shared/static/js/upload.js \
+            shared/static/js/manager.js \
             shared/static/icon.png
           do
             test -f "$f" || { echo "Missing: $f"; exit 1; }
@@ -96,6 +98,10 @@ jobs:
             '"/api/upload"'
             '"/upload_manager"'
             '"/public_manager"'
+            '"/api/host/open"'
+            '"/api/host/delete"'
+            '"/api/host/rename"'
+            '"/api/host/upload"'
           )
           for route in "${routes[@]}"; do
             grep -qF "$route" python/main.py || { echo "Missing in Python: $route"; exit 1; }

@@ -164,13 +164,104 @@ public sealed class HttpContractTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ManagerRoutes_Redirect()
+    public async Task ManagerPages_OnLocalhost()
     {
-        using var upload = await Client.GetAsync("/upload_manager");
-        using var pub = await Client.GetAsync("/public_manager");
+        await File.WriteAllTextAsync(Path.Combine(AppPaths.UploadFolder, "recv.txt"), "a");
+        await File.WriteAllTextAsync(Path.Combine(AppPaths.PublicFolder, "pub.txt"), "b");
 
-        Assert.Equal(HttpStatusCode.Redirect, upload.StatusCode);
-        Assert.Equal(HttpStatusCode.Redirect, pub.StatusCode);
+        using var receivedReq = new HttpRequestMessage(HttpMethod.Get, "/upload_manager");
+        receivedReq.Headers.Host = "127.0.0.1:5000";
+        using var received = await Client.SendAsync(receivedReq);
+        var receivedBody = await received.Content.ReadAsStringAsync();
+        Assert.Equal(HttpStatusCode.OK, received.StatusCode);
+        Assert.Contains("Recebidos", receivedBody);
+        Assert.Contains("recv.txt", receivedBody);
+        Assert.Contains("data-folder=\"received\"", receivedBody);
+
+        using var publicReq = new HttpRequestMessage(HttpMethod.Get, "/public_manager");
+        publicReq.Headers.Host = "127.0.0.1:5000";
+        using var publics = await Client.SendAsync(publicReq);
+        var publicBody = await publics.Content.ReadAsStringAsync();
+        Assert.Equal(HttpStatusCode.OK, publics.StatusCode);
+        Assert.Contains("Públicos", publicBody);
+        Assert.Contains("pub.txt", publicBody);
+    }
+
+    [Fact]
+    public async Task ManagerPages_RedirectOnLan()
+    {
+        using var receivedReq = new HttpRequestMessage(HttpMethod.Get, "/upload_manager");
+        receivedReq.Headers.Host = "192.168.0.10:5000";
+        using var received = await Client.SendAsync(receivedReq);
+        Assert.Equal(HttpStatusCode.Redirect, received.StatusCode);
+
+        using var publicReq = new HttpRequestMessage(HttpMethod.Get, "/public_manager");
+        publicReq.Headers.Host = "192.168.0.10:5000";
+        using var publics = await Client.SendAsync(publicReq);
+        Assert.Equal(HttpStatusCode.Redirect, publics.StatusCode);
+    }
+
+    [Fact]
+    public async Task HostApis_ForbiddenOnLan()
+    {
+        using var openReq = new HttpRequestMessage(HttpMethod.Get, "/api/host/open?folder=received");
+        openReq.Headers.Host = "192.168.0.10:5000";
+        using var open = await Client.SendAsync(openReq);
+        Assert.Equal(HttpStatusCode.Forbidden, open.StatusCode);
+
+        using var deleteReq = new HttpRequestMessage(HttpMethod.Post, "/api/host/delete")
+        {
+            Content = JsonContent("{\"folder\":\"received\",\"name\":\"x.txt\"}"),
+        };
+        deleteReq.Headers.Host = "192.168.0.10:5000";
+        using var deleted = await Client.SendAsync(deleteReq);
+        Assert.Equal(HttpStatusCode.Forbidden, deleted.StatusCode);
+    }
+
+    [Fact]
+    public async Task Host_DeleteRenameUpload()
+    {
+        await File.WriteAllTextAsync(Path.Combine(AppPaths.UploadFolder, "old.txt"), "keep");
+        await File.WriteAllTextAsync(Path.Combine(AppPaths.PublicFolder, "share.txt"), "pub");
+
+        using var renameReq = new HttpRequestMessage(HttpMethod.Post, "/api/host/rename")
+        {
+            Content = JsonContent("{\"folder\":\"received\",\"name\":\"old.txt\",\"new_name\":\"novo.txt\"}"),
+        };
+        renameReq.Headers.Host = "127.0.0.1:5000";
+        using var renamed = await Client.SendAsync(renameReq);
+        Assert.Equal(HttpStatusCode.OK, renamed.StatusCode);
+        Assert.True(File.Exists(Path.Combine(AppPaths.UploadFolder, "novo.txt")));
+        Assert.False(File.Exists(Path.Combine(AppPaths.UploadFolder, "old.txt")));
+
+        using var deleteReq = new HttpRequestMessage(HttpMethod.Post, "/api/host/delete")
+        {
+            Content = JsonContent("{\"folder\":\"public\",\"name\":\"share.txt\"}"),
+        };
+        deleteReq.Headers.Host = "127.0.0.1:5000";
+        using var deleted = await Client.SendAsync(deleteReq);
+        Assert.Equal(HttpStatusCode.OK, deleted.StatusCode);
+        Assert.False(File.Exists(Path.Combine(AppPaths.PublicFolder, "share.txt")));
+
+        using var uploadContent = BuildMultipart(("foto.png", "hello"u8.ToArray()));
+        uploadContent.Add(new StringContent("public"), "folder");
+        using var uploadReq = new HttpRequestMessage(HttpMethod.Post, "/api/host/upload")
+        {
+            Content = uploadContent,
+        };
+        uploadReq.Headers.Host = "127.0.0.1:5000";
+        using var uploaded = await Client.SendAsync(uploadReq);
+        Assert.Equal(HttpStatusCode.OK, uploaded.StatusCode);
+        Assert.Equal("hello"u8.ToArray(), await File.ReadAllBytesAsync(Path.Combine(AppPaths.PublicFolder, "foto.png")));
+    }
+
+    [Fact]
+    public async Task Host_OpenFolder()
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/host/open?folder=received");
+        request.Headers.Host = "127.0.0.1:5000";
+        using var response = await Client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]
@@ -179,6 +270,9 @@ public sealed class HttpContractTests : IAsyncLifetime
         using var response = await Client.GetAsync("/static/css/app.css");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
+
+    private static StringContent JsonContent(string json) =>
+        new(json, System.Text.Encoding.UTF8, "application/json");
 
     private static MultipartFormDataContent BuildMultipart(params (string fileName, byte[] data)[] files)
     {

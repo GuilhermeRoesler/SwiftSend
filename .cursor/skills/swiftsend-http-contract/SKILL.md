@@ -29,8 +29,12 @@ Python (Flask) e C# (Kestrel) devem expor o **mesmo** contrato. Mudança numa st
 | GET | `/upload` | Página de envio |
 | POST | `/api/upload` | Multipart `file` → `arquivos_recebidos/` (prefixo `yyyyMMdd_HHmmss_`); JSON `{success:true}` ou 400 |
 | GET | `/download/<filename>` | Attachment de `arquivos_publicos/` |
-| GET | `/upload_manager` | Abre pasta recebidos no SO → redirect `/` |
-| GET | `/public_manager` | Abre pasta públicos no SO → redirect `/` |
+| GET | `/upload_manager` | **Host only**: tela Recebidos (espelha a pasta); LAN → redirect `/` |
+| GET | `/public_manager` | **Host only**: tela Públicos; LAN → redirect `/` |
+| GET | `/api/host/open?folder=` | **Host only**: abre pasta no SO (`received` \| `public`); JSON |
+| POST | `/api/host/delete` | **Host only**: JSON `{folder,name}` → apaga arquivo |
+| POST | `/api/host/rename` | **Host only**: JSON `{folder,name,new_name}` → renomeia |
+| POST | `/api/host/upload` | **Host only**: multipart `file` + `folder` → grava sem timestamp |
 
 Detalhes de payload, sanitização e diferenças menores Python/C#: [reference.md](reference.md).
 

@@ -124,7 +124,7 @@ Perfis em `csharp/SwiftSend/Properties/PublishProfiles/` (FDD exige .NET 8 Deskt
 ## Como usar
 
 1. Abra o app — o dashboard mostra o link (ex.: `http://192.168.0.15:5000`).
-2. Coloque arquivos em `arquivos_publicos/` (ou use **Gerenciar Públicos**).
+2. Coloque arquivos em **Públicos** no app (ou na pasta `arquivos_publicos/`).
    - Build frozen / instalado: `Documentos/SwiftSend/arquivos_publicos`.
    - Em desenvolvimento: pastas na raiz do repositório.
 3. Na mesma rede, abra o link no navegador para baixar ou enviar.
