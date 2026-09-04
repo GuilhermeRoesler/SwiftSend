@@ -13,7 +13,7 @@ def test_dashboard_on_localhost(client):
     response = client.get("/", headers={"Host": "127.0.0.1:5000"})
     assert response.status_code == 200
     body = response.get_data(as_text=True)
-    assert "Servidor Ativo" in body
+    assert "Servidor ativo" in body
     assert "badge-url" in body or "base_url" in body or "http://" in body
 
 
@@ -21,8 +21,8 @@ def test_home_on_lan_host(client):
     response = client.get("/", headers={"Host": "192.168.0.10:5000"})
     assert response.status_code == 200
     body = response.get_data(as_text=True)
-    assert "Compartilhamento Local" in body
-    assert "Servidor Ativo" not in body
+    assert "Transferência na LAN" in body
+    assert "Servidor ativo" not in body
 
 
 def test_browse_lists_public_files(client, folders):

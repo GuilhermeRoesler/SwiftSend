@@ -1,13 +1,13 @@
 ---
 description: Build/run SwiftSend — aponta para a skill de scripts e empacotamento
-globs: python/**/*,csharp/**/*,run.bat,run.sh
+globs: python/**/*,csharp/**/*,installer/**/*,run.bat,run.sh,.github/workflows/release.yml
 alwaysApply: false
 ---
 
 # SwiftSend — Build e Run
 
-Ao alterar scripts de execução, PyInstaller, csproj ou publish, leia:
+Ao alterar scripts de execução, PyInstaller, csproj, publish ou instaladores, leia:
 
 `.cursor/skills/swiftsend-build-run/SKILL.md`
 
-Raiz `run.*` → Python; C# é Windows (`dotnet publish` single-file).
+Raiz `run.*` → Python; release = instaladores Python (Win/Linux/macOS); C# publish é só local (`csharp/publish.bat`).

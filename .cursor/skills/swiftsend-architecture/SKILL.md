@@ -17,7 +17,7 @@ SwiftSend/
 ├── python/               → primária (Flask + pywebview + PyInstaller)
 ├── csharp/               → secundária Windows (Kestrel + WebView2 + Fluid)
 ├── shared/               → UI única (templates + static)
-├── installer/            → Inno Setup (Windows; empacota build Python)
+├── installer/            → Inno (Win) / AppImage (Linux) / DMG (macOS); empacota Python
 ├── arquivos_publicos/    → runtime (gitignored; em Windows frozen → Documentos)
 └── arquivos_recebidos/   → runtime (gitignored; idem)
 ```
@@ -27,7 +27,7 @@ SwiftSend/
 | Path | Papel |
 |------|--------|
 | `python/` | Padrão / multiplataforma |
-| `csharp/` | Windows otimizado (publish single-file) |
+| `csharp/` | Windows otimizado (publish local / devs; fora do release) |
 | `shared/` | HTML/CSS/JS/fonts — **nunca** duplicar UI por stack |
 
 ## Runtime

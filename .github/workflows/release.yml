@@ -32,15 +32,10 @@ jobs:
             id: linux-amd64
             binary: SwiftSend
             asset_ext: ""
-          # Temporariamente desabilitado (runners macOS lentos no CI)
-          # - os: macos-latest
-          #   id: macos-arm64
-          #   binary: SwiftSend
-          #   asset_ext: ""
-          # - os: macos-13
-          #   id: macos-amd64
-          #   binary: SwiftSend
-          #   asset_ext: ""
+          - os: macos-latest
+            id: macos-arm64
+            binary: SwiftSend
+            asset_ext: ""
     steps:
       - uses: actions/checkout@v4
 
@@ -101,72 +96,6 @@ jobs:
           path: release-out/SwiftSend-python-${{ matrix.id }}-*
           if-no-files-found: error
 
-  csharp-windows:
-    name: C# ${{ matrix.label }} (Windows)
-    runs-on: windows-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - id: fdd
-            label: Framework-Dependent
-            profile: FrameworkDependent
-            out_dir: csharp/dist/fdd
-          - id: scd
-            label: Self-Contained
-            profile: SelfContained
-            out_dir: csharp/dist/scd
-          - id: r2r
-            label: ReadyToRun
-            profile: ReadyToRun
-            out_dir: csharp/dist/r2r
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: "8.0.x"
-
-      - name: Publish ${{ matrix.label }}
-        run: >
-          dotnet publish csharp/SwiftSend/SwiftSend.csproj
-          -c Release
-          -p:PublishProfile=${{ matrix.profile }}
-
-      - name: Verify shared UI bundled
-        shell: pwsh
-        run: |
-          $src = "${{ matrix.out_dir }}"
-          $required = @(
-            "shared/templates/dashboard.html",
-            "shared/templates/home.html",
-            "shared/static/css/app.css"
-          )
-          foreach ($rel in $required) {
-            $path = Join-Path $src $rel
-            if (-not (Test-Path $path)) {
-              throw "Missing bundled UI file: $path"
-            }
-          }
-
-      - name: Package artifact
-        shell: pwsh
-        run: |
-          $tag = if ($env:GITHUB_REF_TYPE -eq "tag") { $env:GITHUB_REF_NAME } else { "dev" }
-          $id = "${{ matrix.id }}"
-          $src = "${{ matrix.out_dir }}"
-          New-Item -ItemType Directory -Force -Path release-out | Out-Null
-          # WebView2 deixa DLLs nativas ao lado do .exe — zip da pasta publish.
-          Get-ChildItem $src -Include *.pdb,*.xml -Recurse -File | Remove-Item -Force
-          Compress-Archive -Path "$src\*" -DestinationPath "release-out/SwiftSend-csharp-windows-$id-$tag.zip" -Force
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: SwiftSend-csharp-windows-${{ matrix.id }}
-          path: release-out/SwiftSend-csharp-windows-*.zip
-          if-no-files-found: error
-
   windows-installer:
     name: Inno Setup (Windows)
     needs: [python]
@@ -218,9 +147,94 @@ jobs:
           path: release-out/SwiftSend-Setup-*.exe
           if-no-files-found: error
 
+  linux-installer:
+    name: AppImage (Linux)
+    needs: [python]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Python Linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: SwiftSend-python-linux-amd64
+          path: release-in
+
+      - name: Stage binary
+        run: |
+          mkdir -p python/dist
+          src="$(find release-in -type f -name 'SwiftSend-python-linux-amd64-*' | head -n1)"
+          test -n "$src"
+          cp "$src" python/dist/SwiftSend
+          chmod +x python/dist/SwiftSend
+
+      - name: Build AppImage
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          if [ "${GITHUB_REF_TYPE}" != "tag" ]; then
+            tag="dev"
+          fi
+          version="${tag#v}"
+          chmod +x installer/linux/build_appimage.sh
+          ./installer/linux/build_appimage.sh "$version" --skip-build
+          mkdir -p release-out
+          src="installer/output/SwiftSend-${version}-x86_64.AppImage"
+          test -f "$src"
+          cp "$src" "release-out/SwiftSend-${tag}-linux-amd64.AppImage"
+          chmod +x "release-out/SwiftSend-${tag}-linux-amd64.AppImage"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SwiftSend-AppImage-linux
+          path: release-out/SwiftSend-*-linux-amd64.AppImage
+          if-no-files-found: error
+
+  macos-installer:
+    name: DMG (macOS)
+    needs: [python]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Python macOS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: SwiftSend-python-macos-arm64
+          path: release-in
+
+      - name: Stage binary
+        run: |
+          mkdir -p python/dist
+          src="$(find release-in -type f -name 'SwiftSend-python-macos-arm64-*' | head -n1)"
+          test -n "$src"
+          cp "$src" python/dist/SwiftSend
+          chmod +x python/dist/SwiftSend
+
+      - name: Build DMG
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          if [ "${GITHUB_REF_TYPE}" != "tag" ]; then
+            tag="dev"
+          fi
+          version="${tag#v}"
+          chmod +x installer/macos/build_dmg.sh
+          ./installer/macos/build_dmg.sh "$version" --skip-build
+          mkdir -p release-out
+          src="installer/output/SwiftSend-${version}-macos-arm64.dmg"
+          test -f "$src"
+          cp "$src" "release-out/SwiftSend-${tag}-macos-arm64.dmg"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SwiftSend-DMG-macos
+          path: release-out/SwiftSend-*-macos-arm64.dmg
+          if-no-files-found: error
+
   github-release:
     name: Publish GitHub Release
-    needs: [python, csharp-windows, windows-installer]
+    needs: [python, windows-installer, linux-installer, macos-installer]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
@@ -237,12 +251,17 @@ jobs:
           name: SwiftSend-Setup-windows
           path: dist
 
-      - name: Download C# artifacts
+      - name: Download Linux AppImage
         uses: actions/download-artifact@v4
         with:
-          pattern: SwiftSend-csharp-windows-*
+          name: SwiftSend-AppImage-linux
           path: dist
-          merge-multiple: true
+
+      - name: Download macOS DMG
+        uses: actions/download-artifact@v4
+        with:
+          name: SwiftSend-DMG-macos
+          path: dist
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -254,38 +273,32 @@ jobs:
           generate_release_notes: true
           files: |
             dist/SwiftSend-Setup-*.exe
+            dist/SwiftSend-*-linux-amd64.AppImage
+            dist/SwiftSend-*-macos-arm64.dmg
             dist/SwiftSend-python-*
-            dist/SwiftSend-csharp-windows-*.zip
           body: |
-            ## Windows (recomendado)
-
-            | Artefato | Descrição |
-            |----------|-----------|
-            | `SwiftSend-Setup-${{ github.ref_name }}.exe` | Instalador (Inno Setup) — Menu Iniciar, desinstalador; dados em `Documentos\SwiftSend` |
-
-            O setup usa o build **Python** (PyInstaller). Se o WebView2 Runtime não estiver presente, o instalador tenta baixá-lo.
-
-            ## Python (portable / multiplataforma)
+            ## Instaladores (recomendado)
 
             | Artefato | Plataforma |
             |----------|------------|
-            | `SwiftSend-python-windows-amd64-${{ github.ref_name }}.exe` | Windows x64 (portable) |
+            | `SwiftSend-Setup-${{ github.ref_name }}.exe` | Windows x64 (Inno Setup) |
+            | `SwiftSend-${{ github.ref_name }}-linux-amd64.AppImage` | Linux x64 (AppImage) |
+            | `SwiftSend-${{ github.ref_name }}-macos-arm64.dmg` | macOS Apple Silicon (DMG) |
+
+            Dados do usuário (todos os SOs): `Documentos/SwiftSend` (`arquivos_publicos` / `arquivos_recebidos`).
+
+            - **Windows:** Menu Iniciar + desinstalador; se o WebView2 Runtime estiver ausente, o setup tenta instalá-lo.
+            - **Linux:** `chmod +x` no AppImage e execute. Requer GTK 3 + WebKitGTK (ex.: `libgtk-3-0`, `libwebkit2gtk-4.1-0` no Debian/Ubuntu).
+            - **macOS:** abra o DMG e arraste `SwiftSend.app` para Aplicativos.
+
+            ## Python (portable)
+
+            | Artefato | Plataforma |
+            |----------|------------|
+            | `SwiftSend-python-windows-amd64-${{ github.ref_name }}.exe` | Windows x64 |
             | `SwiftSend-python-linux-amd64-${{ github.ref_name }}` | Linux x64 |
+            | `SwiftSend-python-macos-arm64-${{ github.ref_name }}` | macOS arm64 |
 
-            No Linux: `chmod +x` no binário antes de executar. Linux precisa de GTK 3 + WebKitGTK (ex.: `libgtk-3-0`, `libwebkit2gtk-4.1-0` no Debian/Ubuntu).
-            No Windows portable (frozen): pastas de dados em `Documentos\SwiftSend`.
-
-            > Builds macOS (arm64/amd64) estão temporariamente desabilitados no CI.
-
-            ## C# (Windows)
-
-            | Artefato | Descrição |
-            |----------|-----------|
-            | `SwiftSend-csharp-windows-fdd-${{ github.ref_name }}.zip` | Framework-Dependent — exige [.NET 8 Desktop](https://dotnet.microsoft.com/download/dotnet/8.0) + ASP.NET Core Runtime |
-            | `SwiftSend-csharp-windows-scd-${{ github.ref_name }}.zip` | Self-Contained — inclui o runtime .NET |
-            | `SwiftSend-csharp-windows-r2r-${{ github.ref_name }}.zip` | Self-Contained + ReadyToRun — startup mais rápido |
-
-            Extraia o zip C# e execute `SwiftSend.exe`. Builds C# exigem [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/).
-            Native AOT não está disponível: WPF não é compatível com `PublishAot` (NETSDK1168).
+            Builds **C#** (FDD/SCD/R2R) não entram no release — use `csharp\publish.bat` localmente (devs).
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

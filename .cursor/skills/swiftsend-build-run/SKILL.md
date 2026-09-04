@@ -51,9 +51,13 @@ python build.py
 Build **nativo por SO** (sem cross-compile). Inclui `shared/` e `--collect-all=webview`.
 No Linux de CI: GTK 3 + WebKitGTK + `libgirepository-2.0-dev` + `PyGObject` (≥3.51 exige girepository 2.0).
 
-### Windows → Inno Setup (canônico)
+### Instaladores (canônicos — release)
 
-Requisito: [Inno Setup 6](https://jrsoftware.org/isinfo.php) (`ISCC.exe`).
+| SO | Script | Artefato |
+|----|--------|----------|
+| Windows | `installer/build_installer.ps1` | `SwiftSend-Setup-*.exe` (Inno Setup 6) |
+| Linux | `installer/linux/build_appimage.sh` | `SwiftSend-*-x86_64.AppImage` |
+| macOS | `installer/macos/build_dmg.sh` | `SwiftSend-*-macos-arm64.dmg` |
 
 ```powershell
 .\installer\build_installer.ps1 -Version 1.0.0
@@ -61,14 +65,23 @@ Requisito: [Inno Setup 6](https://jrsoftware.org/isinfo.php) (`ISCC.exe`).
 # -SkipBuild usa python/dist/SwiftSend.exe já existente
 ```
 
-Instala em `{autopf}\SwiftSend`, Menu Iniciar + desinstalador. Dados do usuário: `Documentos\SwiftSend\` (não apagados na desinstalação). O setup tenta instalar o WebView2 Runtime se ausente.
+```bash
+./installer/linux/build_appimage.sh 1.0.0          # ou --skip-build
+./installer/macos/build_dmg.sh 1.0.0               # só no Darwin
+```
 
-### C# → publish profiles (win-x64)
+- **Windows:** instala em `{autopf}\SwiftSend`, Menu Iniciar + desinstalador; tenta WebView2 se ausente.
+- **Linux:** AppImage portátil; runtime GTK 3 + WebKitGTK no sistema.
+- **macOS:** DMG com `SwiftSend.app` (arrastar para Aplicativos).
+- Dados do usuário (frozen, todos os SOs): `Documentos/SwiftSend/` (não apagados na desinstalação).
+
+### C# → publish local (devs only)
+
+Não entra no GitHub Release. Perfis em `csharp/SwiftSend/Properties/PublishProfiles/`.
 
 ```powershell
-dotnet publish csharp/SwiftSend/SwiftSend.csproj -c Release -p:PublishProfile=FrameworkDependent  # → csharp/dist/fdd
-dotnet publish csharp/SwiftSend/SwiftSend.csproj -c Release -p:PublishProfile=SelfContained         # → csharp/dist/scd
-dotnet publish csharp/SwiftSend/SwiftSend.csproj -c Release -p:PublishProfile=ReadyToRun            # → csharp/dist/r2r
+.\csharp\publish.bat           # fdd + scd + r2r → csharp/dist/
+.\csharp\publish.bat scd       # só Self-Contained
 ```
 
 | Perfil | Conteúdo | Requisito extra |
@@ -81,8 +94,8 @@ O `csproj` copia `shared/` para output e publish (ao lado do `.exe`). Sem isso a
 
 ## Notas
 
-- C# = Windows only; Python = multiplataforma (releases win/linux/mac).
+- C# = Windows only / **só local**; Python = multiplataforma (releases + instaladores).
 - PyInstaller: binário grande / possíveis falsos positivos de antivírus.
-- CD: tag `v*` → Python (`windows-amd64`, `linux-amd64`, …) + **Inno Setup** (`SwiftSend-Setup-v*.exe`) + zips C# (`fdd` / `scd` / `r2r`).
-- Frozen Windows: `DATA_ROOT` = `Documentos\SwiftSend` (pastas `arquivos_*`).
+- CD: tag `v*` → PyInstaller (win/linux/mac) + instaladores (Inno / AppImage / DMG) + portables Python.
+- Frozen: `DATA_ROOT` = `Documentos/SwiftSend` (pastas `arquivos_*`).
 - Demo Pages: `python demo/build.py` + workflow `.github/workflows/pages.yml` (UI estática a partir de `shared/`).

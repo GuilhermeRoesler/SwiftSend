@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=SwiftSend
+Comment=Transferência de arquivos na LAN
+Exec=SwiftSend
+Icon=SwiftSend
+Categories=Network;Utility;
+Terminal=false
+StartupNotify=true

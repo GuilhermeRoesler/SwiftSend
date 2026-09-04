@@ -31,8 +31,7 @@ def _windows_documents_dir() -> Path:
 
 # --- Paths ---
 # Dev: repo root = parent of python/
-# Frozen Windows: Documentos/SwiftSend (gravável; instalador usa Program Files)
-# Frozen outros SOs: pasta do executável
+# Frozen (qualquer SO): Documentos/SwiftSend (gravável; AppImage/.app/Program Files são só leitura)
 if getattr(sys, "frozen", False):
     APP_ROOT = Path(sys.executable).resolve().parent
     # PyInstaller extrai datas em _MEIPASS
@@ -43,7 +42,7 @@ if getattr(sys, "frozen", False):
     if sys.platform == "win32":
         DATA_ROOT = _windows_documents_dir() / "SwiftSend"
     else:
-        DATA_ROOT = APP_ROOT
+        DATA_ROOT = Path.home() / "Documents" / "SwiftSend"
 else:
     APP_ROOT = Path(__file__).resolve().parent
     DATA_ROOT = APP_ROOT.parent  # repo root

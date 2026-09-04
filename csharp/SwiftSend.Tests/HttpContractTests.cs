@@ -53,7 +53,7 @@ public sealed class HttpContractTests : IAsyncLifetime
         var body = await response.Content.ReadAsStringAsync();
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Contains("Servidor Ativo", body);
+        Assert.Contains("Servidor ativo", body);
         Assert.Contains("http://", body);
     }
 
@@ -66,8 +66,8 @@ public sealed class HttpContractTests : IAsyncLifetime
         var body = await response.Content.ReadAsStringAsync();
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Contains("Compartilhamento Local", body);
-        Assert.DoesNotContain("Servidor Ativo", body);
+        Assert.Contains("Transferência na LAN", body);
+        Assert.DoesNotContain("Servidor ativo", body);
     }
 
     [Fact]

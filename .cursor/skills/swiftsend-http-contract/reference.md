@@ -33,7 +33,7 @@ Ambas redirecionam para `/` após disparar o gerenciador de arquivos.
 
 | Stack | Resolução |
 |-------|-----------|
-| Python | Parent de `python/` em dev; pasta do `.exe` se frozen (PyInstaller) |
+| Python | Parent de `python/` em dev; frozen → `Documentos/SwiftSend` (todos os SOs) |
 | C# | Env `SWIFTSEND_ROOT`, ou sobe diretórios até achar `shared/templates`, ou `BaseDirectory` |
 
 Pastas `arquivos_publicos` e `arquivos_recebidos` vivem em `DATA_ROOT` (criar se não existirem).

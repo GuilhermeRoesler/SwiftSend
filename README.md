@@ -20,7 +20,7 @@ SwiftSend/
 ├── python/              # primária (Flask + pywebview)
 ├── csharp/              # secundária (ASP.NET + WebView2, Windows)
 ├── shared/              # UI única (templates + static)
-├── installer/           # Inno Setup (Windows, build Python)
+├── installer/           # Inno (Win) / AppImage (Linux) / DMG (macOS)
 ├── images/
 └── icon.png
 ```
@@ -77,18 +77,34 @@ python build.py
 
 Rode o build **no SO de destino** (PyInstaller não faz cross-compile).
 
-### Instalador Windows (Inno Setup)
+### Instaladores
 
-Requisito: [Inno Setup 6](https://jrsoftware.org/isinfo.php). Empacota o `.exe` PyInstaller:
+Empacotam o binário **Python** (PyInstaller).
+
+**Windows** — [Inno Setup 6](https://jrsoftware.org/isinfo.php):
 
 ```powershell
 .\installer\build_installer.ps1 -Version 1.0.0
 # → installer/output/SwiftSend-Setup-1.0.0.exe
 ```
 
-Com o `.exe` já gerado: `-SkipBuild`. O setup instala em Program Files, cria atalhos no Menu Iniciar e desinstalador; pastas de dados ficam em `Documentos\SwiftSend`.
+**Linux** (AppImage):
 
-### C# (Windows)
+```bash
+./installer/linux/build_appimage.sh 1.0.0
+# → installer/output/SwiftSend-1.0.0-x86_64.AppImage
+```
+
+**macOS** (DMG, só no Darwin):
+
+```bash
+./installer/macos/build_dmg.sh 1.0.0
+# → installer/output/SwiftSend-1.0.0-macos-arm64.dmg
+```
+
+Com o binário já gerado: `-SkipBuild` / `--skip-build`. Dados do usuário: `Documentos/SwiftSend`.
+
+### C# (Windows — só desenvolvimento)
 
 Requisitos: .NET 8 SDK e [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/).
 
@@ -96,24 +112,20 @@ Requisitos: .NET 8 SDK e [WebView2 Runtime](https://developer.microsoft.com/micr
 .\csharp\run.bat
 ```
 
-Publish (perfis em `csharp/SwiftSend/Properties/PublishProfiles/`):
+Publish local (não entra no GitHub Release):
 
 ```powershell
-# Framework-Dependent (precisa do .NET 8 Desktop + ASP.NET Core Runtime)
-dotnet publish csharp/SwiftSend/SwiftSend.csproj -c Release -p:PublishProfile=FrameworkDependent
-
-# Self-Contained single-file
-dotnet publish csharp/SwiftSend/SwiftSend.csproj -c Release -p:PublishProfile=SelfContained
-
-# Self-Contained + ReadyToRun (alternativa a Native AOT; WPF não suporta PublishAot)
-dotnet publish csharp/SwiftSend/SwiftSend.csproj -c Release -p:PublishProfile=ReadyToRun
+.\csharp\publish.bat           # fdd + scd + r2r → csharp/dist/
+.\csharp\publish.bat scd       # um perfil
 ```
+
+Perfis em `csharp/SwiftSend/Properties/PublishProfiles/` (FDD exige .NET 8 Desktop + ASP.NET Core Runtime; SCD/R2R são self-contained; WPF não suportam Native AOT).
 
 ## Como usar
 
 1. Abra o app — o dashboard mostra o link (ex.: `http://192.168.0.15:5000`).
 2. Coloque arquivos em `arquivos_publicos/` (ou use **Gerenciar Públicos**).
-   - No Windows (build frozen / instalado): `Documentos\SwiftSend\arquivos_publicos`.
+   - Build frozen / instalado: `Documentos/SwiftSend/arquivos_publicos`.
    - Em desenvolvimento: pastas na raiz do repositório.
 3. Na mesma rede, abra o link no navegador para baixar ou enviar.
 4. Uploads chegam em `arquivos_recebidos/` (mesmo `DATA_ROOT`).
@@ -126,11 +138,11 @@ dotnet publish csharp/SwiftSend/SwiftSend.csproj -c Release -p:PublishProfile=Re
 
 Push de uma tag `v*` (ex.: `v1.0.0`) dispara o workflow **Release**:
 
-1. PyInstaller (Windows amd64, Linux amd64; macOS temporariamente off)
-2. Instalador Inno Setup Windows → `SwiftSend-Setup-v….exe` (recomendado no Windows)
-3. Publish C# (Windows) em três zips → `…-fdd-…`, `…-scd-…`, `…-r2r-…`
-4. Publica um [GitHub Release](../../releases) com todos os artefatos
+1. PyInstaller (Windows amd64, Linux amd64, macOS arm64)
+2. Instaladores: Inno Setup (Windows), AppImage (Linux), DMG (macOS)
+3. Publica um [GitHub Release](../../releases) com instaladores + portables Python
 
+Builds C# (FDD/SCD/R2R) ficam só no `csharp\publish.bat` local.
 ```bash
 git tag v1.0.0
 git push origin v1.0.0

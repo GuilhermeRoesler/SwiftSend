@@ -9,8 +9,8 @@ public class TemplateRendererTests
     {
         var renderer = new TemplateRenderer();
         var html = await renderer.RenderAsync("home.html", new { is_desktop = false });
-        Assert.Contains("Compartilhamento Local", html);
-        Assert.DoesNotContain("Servidor Ativo", html);
+        Assert.Contains("Transferência na LAN", html);
+        Assert.DoesNotContain("Servidor ativo", html);
     }
 
     [Fact]
@@ -24,7 +24,7 @@ public class TemplateRendererTests
             upload_path = @"C:\tmp",
             is_desktop = true,
         });
-        Assert.Contains("Servidor Ativo", html);
+        Assert.Contains("Servidor ativo", html);
         Assert.Contains("http://192.168.0.1:5000", html);
     }
 }
