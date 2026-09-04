@@ -15,6 +15,7 @@ def test_required_static_assets_exist():
     assert (SHARED / "static" / "css" / "app.css").is_file()
     assert (SHARED / "static" / "js" / "upload.js").is_file()
     assert (SHARED / "static" / "icon.png").is_file()
+    assert (SHARED / "static" / "icon.ico").is_file()
 
 
 def test_dynamic_templates_use_compatible_tags():

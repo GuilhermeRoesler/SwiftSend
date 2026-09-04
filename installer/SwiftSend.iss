@@ -29,7 +29,7 @@ DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir=output
 OutputBaseFilename=SwiftSend-Setup-{#MyAppVersion}
-SetupIconFile=..\icon.ico
+SetupIconFile=..\shared\static\icon.ico
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
@@ -52,7 +52,6 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 Source: "..\python\dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\icon.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Comment: "Transferência de arquivos na LAN"

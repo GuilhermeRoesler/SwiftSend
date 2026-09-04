@@ -1,4 +1,4 @@
-# <img src="icon.png" width="40" align="left" style="margin-right: .8rem">**SwiftSend — Transferência de Arquivos Local**
+# <img src="shared/static/icon.png" width="40" align="left" style="margin-right: .8rem">**SwiftSend — Transferência de Arquivos Local**
 
 O **SwiftSend** é uma aplicação desktop leve para enviar e receber arquivos pesados na rede local (Wi-Fi/LAN), sem pen-drive nem nuvem.
 
@@ -19,10 +19,9 @@ SwiftSend/
 ├── run.bat / run.sh     # atalho → versão Python
 ├── python/              # primária (Flask + pywebview)
 ├── csharp/              # secundária (ASP.NET + WebView2, Windows)
-├── shared/              # UI única (templates + static)
+├── shared/              # UI única (templates + static + ícones)
 ├── installer/           # Inno (Win) / AppImage (Linux) / DMG (macOS)
-├── images/
-└── icon.png
+└── docs/
 ```
 
 Mesmo contrato HTTP nas duas backends; a UI vive em `shared/`.

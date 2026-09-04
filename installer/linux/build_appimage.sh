@@ -12,7 +12,7 @@ BIN="$PY_DIR/dist/SwiftSend"
 OUT_DIR="$ROOT/installer/output"
 APPDIR="$OUT_DIR/SwiftSend.AppDir"
 DESKTOP_SRC="$ROOT/installer/linux/SwiftSend.desktop"
-ICON_SRC="$ROOT/icon.png"
+ICON_SRC="$ROOT/shared/static/icon.png"
 VERSION="0.0.0-dev"
 SKIP_BUILD=0
 

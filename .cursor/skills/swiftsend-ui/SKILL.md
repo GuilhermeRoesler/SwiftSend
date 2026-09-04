@@ -23,7 +23,8 @@ shared/
 │   ├── js/upload.js
 │   ├── js/qrcode.js     # QR local (sem CDN)
 │   ├── fonts/           # Sora + JetBrains Mono + Material Symbols
-│   └── icon.png
+│   ├── icon.png
+│   └── icon.ico
 ```
 
 Demo estática (GitHub Pages): `python demo/build.py` → `demo/dist/` (templates com dados mock + `upload-demo.js`). Não altera o contrato das backends.

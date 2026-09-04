@@ -12,7 +12,7 @@ BIN="$PY_DIR/dist/SwiftSend"
 OUT_DIR="$ROOT/installer/output"
 STAGE="$OUT_DIR/dmg-stage"
 APP_NAME="SwiftSend.app"
-ICON_PNG="$ROOT/icon.png"
+ICON_PNG="$ROOT/shared/static/icon.png"
 VERSION="0.0.0-dev"
 SKIP_BUILD=0
 

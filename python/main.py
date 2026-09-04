@@ -98,23 +98,12 @@ def is_desktop_host() -> bool:
 
 
 def resolve_window_icon() -> str | None:
-    """Ícone nativo da janela/taskbar (pywebview). No Windows prefira .ico."""
+    """Ícone nativo da janela/taskbar (pywebview). Fonte: shared/static."""
+    static = SHARED_DIR / "static"
     candidates: list[Path] = []
     if sys.platform == "win32":
-        candidates.extend(
-            (
-                DATA_ROOT / "icon.ico",
-                SHARED_DIR / "static" / "icon.ico",
-                APP_ROOT / "icon.ico",
-            )
-        )
-    candidates.extend(
-        (
-            SHARED_DIR / "static" / "icon.png",
-            DATA_ROOT / "icon.png",
-            APP_ROOT / "icon.png",
-        )
-    )
+        candidates.append(static / "icon.ico")
+    candidates.append(static / "icon.png")
     for path in candidates:
         if path.is_file():
             return str(path)
