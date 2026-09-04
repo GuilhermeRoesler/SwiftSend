@@ -2,7 +2,7 @@
 
 O **SwiftSend** é uma aplicação desktop leve para enviar e receber arquivos pesados na rede local (Wi-Fi/LAN), sem pen-drive nem nuvem.
 
-![Main interface](images/main_interface.png)
+![Main interface](docs/screenshots/demo.png)
 
 ## Funcionalidades
 
@@ -129,10 +129,6 @@ Perfis em `csharp/SwiftSend/Properties/PublishProfiles/` (FDD exige .NET 8 Deskt
    - Em desenvolvimento: pastas na raiz do repositório.
 3. Na mesma rede, abra o link no navegador para baixar ou enviar.
 4. Uploads chegam em `arquivos_recebidos/` (mesmo `DATA_ROOT`).
-
-![Download view](images/download_view.png)
-
-![Upload view](images/upload_view.png)
 
 ## Releases (CD)
 
