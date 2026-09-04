@@ -21,7 +21,8 @@ SwiftSend/
 ├── csharp/              # secundária (ASP.NET + WebView2, Windows)
 ├── shared/              # UI única (templates + static + ícones)
 ├── installer/           # Inno (Win) / AppImage (Linux) / DMG (macOS)
-└── docs/
+├── demo/                # site estático (GitHub Pages)
+└── docs/                # screenshots
 ```
 
 Mesmo contrato HTTP nas duas backends; a UI vive em `shared/`.
@@ -137,7 +138,10 @@ Push de uma tag `v*` (ex.: `v1.0.0`) dispara o workflow **Release**:
 2. Instaladores: Inno Setup (Windows), AppImage (Linux), DMG (macOS)
 3. Publica um [GitHub Release](../../releases) com instaladores + portables Python
 
-Builds C# (FDD/SCD/R2R) ficam só no `csharp\publish.bat` local.
+Builds C# (FDD/SCD/R2R) ficam só no `csharp/publish.bat` local.
+
+Para publicar:
+
 ```bash
 git tag v1.0.0
 git push origin v1.0.0
