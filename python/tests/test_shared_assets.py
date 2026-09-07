@@ -16,6 +16,21 @@ def test_required_static_assets_exist():
     assert (SHARED / "static" / "js" / "upload.js").is_file()
     assert (SHARED / "static" / "icon.png").is_file()
     assert (SHARED / "static" / "icon.ico").is_file()
+    assert (SHARED / "static" / "icon-32.png").is_file()
+    assert (SHARED / "static" / "icon-32.webp").is_file()
+    assert (SHARED / "static" / "icon-64.png").is_file()
+    assert (SHARED / "static" / "icon-64.webp").is_file()
+
+
+def test_templates_use_compact_web_icons():
+    for name in ("dashboard.html", "home.html", "browse.html", "upload.html", "manager.html"):
+        text = (SHARED / "templates" / name).read_text(encoding="utf-8")
+        assert 'href="/static/icon-32.png"' in text, name
+        assert 'href="/static/icon.png"' not in text, name
+        if name != "home.html":
+            assert 'decoding="async"' in text, name
+            assert 'alt="SwiftSend"' in text, name
+            assert "icon-32.webp" in text, name
 
 
 def test_dynamic_templates_use_compatible_tags():

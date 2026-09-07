@@ -83,7 +83,11 @@ jobs:
             shared/static/css/app.css \
             shared/static/js/upload.js \
             shared/static/js/manager.js \
-            shared/static/icon.png
+            shared/static/icon.png \
+            shared/static/icon-32.png \
+            shared/static/icon-32.webp \
+            shared/static/icon-64.png \
+            shared/static/icon-64.webp
           do
             test -f "$f" || { echo "Missing: $f"; exit 1; }
           done

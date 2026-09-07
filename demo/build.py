@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 import shutil
 from pathlib import Path
@@ -12,6 +13,23 @@ ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parent
 SHARED = REPO / "shared"
 DIST = ROOT / "dist"
+# URL canônica do Pages (project site). Sobrescreva com SWIFTSEND_DEMO_BASE se mudar o repo.
+DEMO_BASE = os.environ.get(
+    "SWIFTSEND_DEMO_BASE", "https://guilhermeroesler.github.io/SwiftSend"
+).rstrip("/")
+
+OG_META = f"""
+    <meta name="description" content="Arquivos pesados no mesmo Wi‑Fi — direto entre dispositivos, sem nuvem.">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="SwiftSend — Transferência na LAN">
+    <meta property="og:description" content="Arquivos pesados no mesmo Wi‑Fi — direto entre dispositivos, sem nuvem.">
+    <meta property="og:image" content="{DEMO_BASE}/og.webp">
+    <meta property="og:url" content="{DEMO_BASE}/">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="SwiftSend — Transferência na LAN">
+    <meta name="twitter:description" content="Arquivos pesados no mesmo Wi‑Fi — direto entre dispositivos, sem nuvem.">
+    <meta name="twitter:image" content="{DEMO_BASE}/og.webp">
+"""
 
 MOCK_FILES = [
     {"name": "apresentacao-projeto.pdf", "size": "2.4 MB"},
@@ -108,6 +126,9 @@ DEMO_TOAST_SCRIPT = """
 def rewrite_asset_paths(html: str) -> str:
     html = html.replace('href="/static/', 'href="static/')
     html = html.replace('src="/static/', 'src="static/')
+    # srcset pode ter várias URLs: "/static/a 1x, /static/b 2x"
+    html = html.replace('srcset="/static/', 'srcset="static/')
+    html = html.replace(", /static/", ", static/")
     html = html.replace('href="/browse"', 'href="browse.html"')
     html = html.replace('href="/upload"', 'href="upload.html"')
     html = html.replace('href="/"', 'href="index.html"')
@@ -124,7 +145,20 @@ def rewrite_asset_paths(html: str) -> str:
     return html
 
 
+def inject_og_meta(html: str) -> str:
+    if "og:image" in html:
+        return html
+    return re.sub(
+        r"(<meta\s+name=\"viewport\"[^>]*>)",
+        r"\1" + OG_META,
+        html,
+        count=1,
+        flags=re.IGNORECASE,
+    )
+
+
 def inject_demo_chrome(html: str, *, desktop_frame: bool = False) -> str:
+    html = inject_og_meta(html)
     html = re.sub(
         r"(<body[^>]*>)",
         r"\1" + DEMO_BANNER,
@@ -230,6 +264,11 @@ def build() -> None:
     )
 
     copy_static()
+
+    og_src = REPO / "docs" / "screenshots" / "demo.webp"
+    if og_src.is_file():
+        shutil.copy2(og_src, DIST / "og.webp")
+
     for name, html in render_pages(env).items():
         (DIST / name).write_text(html, encoding="utf-8")
 

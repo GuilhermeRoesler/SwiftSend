@@ -1,8 +1,8 @@
-# <img src="shared/static/icon.png" width="40" align="left" style="margin-right: .8rem">**SwiftSend — Transferência de Arquivos Local**
+# <img src="shared/static/icon-64.png" width="40" align="left" style="margin-right: .8rem" alt="SwiftSend">**SwiftSend — Transferência de Arquivos Local**
 
 O **SwiftSend** é uma aplicação desktop leve para enviar e receber arquivos pesados na rede local (Wi-Fi/LAN), sem pen-drive nem nuvem.
 
-![Main interface](docs/screenshots/demo.png)
+![Main interface](docs/screenshots/demo.webp)
 
 ## Funcionalidades
 

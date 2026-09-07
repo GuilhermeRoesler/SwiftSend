@@ -256,6 +256,10 @@ a {
   text-decoration: none;
 }
 
+.brand-mark picture {
+  display: contents;
+}
+
 .brand-mark img {
   width: 2rem;
   height: 2rem;

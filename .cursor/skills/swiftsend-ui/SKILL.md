@@ -25,11 +25,13 @@ shared/
 │   ├── js/manager.js    # ações host + upload para pastas gerenciadas
 │   ├── js/qrcode.js     # QR local (sem CDN)
 │   ├── fonts/           # Sora + JetBrains Mono + Material Symbols
-│   ├── icon.png
-│   └── icon.ico
+│   ├── icon.png         # 512 — instaladores / app desktop
+│   ├── icon.ico
+│   ├── icon-32.png|.webp  # favicon + brand mark (1x)
+│   └── icon-64.png|.webp  # brand mark retina (2x)
 ```
 
-Demo estática (GitHub Pages): `python demo/build.py` → `demo/dist/` (templates com dados mock + `upload-demo.js`). Não altera o contrato das backends.
+Demo estática (GitHub Pages): `python demo/build.py` → `demo/dist/` (templates com dados mock + `upload-demo.js` + meta OG/Twitter + `og.webp`). Não altera o contrato das backends.
 
 ## Convenções
 
