@@ -44,10 +44,18 @@
                 <div class="pointer-events-none manager-drop-inner">
                     <span class="material-symbols-outlined text-brand" aria-hidden="true">upload_file</span>
                     <div>
-                        <p class="font-semibold text-ink">Arraste arquivos ou clique para adicionar</p>
-                        <p class="text-sm text-muted mt-0.5">Salvos direto nesta pasta</p>
+                        <p class="font-semibold text-ink">Arraste arquivos ou pasta, ou clique para adicionar</p>
+                        <p class="text-sm text-muted mt-0.5">Pasta vira ZIP · salvos direto aqui</p>
                     </div>
                 </div>
+            </div>
+
+            <div class="drop-zone-actions drop-zone-actions--compact">
+                <input type="file" id="folderInput" class="sr-only" webkitdirectory directory multiple tabindex="-1" aria-hidden="true">
+                <button type="button" class="btn-secondary w-full" id="folderPickBtn">
+                    <span class="material-symbols-outlined" aria-hidden="true">folder_zip</span>
+                    Adicionar pasta (ZIP)
+                </button>
             </div>
 
             <div id="progressContainer" class="hidden transfer-meter transfer-meter--compact" aria-live="polite">
@@ -107,6 +115,8 @@
         </div>
     </main>
     <script src="/static/js/app.js"></script>
+    <script src="/static/js/fflate.min.js"></script>
+    <script src="/static/js/folder-zip.js"></script>
     <script src="/static/js/manager.js"></script>
 </body>
 </html>

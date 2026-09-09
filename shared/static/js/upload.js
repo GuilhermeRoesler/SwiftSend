@@ -1,6 +1,9 @@
 (function () {
   const fileInput = document.getElementById("fileInput");
+  const folderInput = document.getElementById("folderInput");
+  const folderPickBtn = document.getElementById("folderPickBtn");
   const fileNameDisplay = document.getElementById("fileNameDisplay");
+  const fileChipIcon = document.getElementById("fileChipIcon");
   const fileList = document.getElementById("fileList");
   const form = document.getElementById("uploadForm");
   const progressBar = document.getElementById("progressBar");
@@ -15,6 +18,8 @@
   const successPanel = document.getElementById("successPanel");
 
   if (!fileInput || !form) return;
+
+  var pendingFolder = null;
 
   function formatBytes(bytes) {
     if (!bytes || bytes < 0) return "0 B";
@@ -47,19 +52,71 @@
     if (statusText && bytesText != null) statusText.textContent = bytesText;
   }
 
+  function setBusy(busy) {
+    submitBtn.disabled = busy;
+    if (busy) submitBtn.classList.add("opacity-50", "cursor-not-allowed");
+    else submitBtn.classList.remove("opacity-50", "cursor-not-allowed");
+    if (folderPickBtn) folderPickBtn.disabled = busy;
+    fileInput.disabled = busy;
+  }
+
+  function showSelection(label, icon) {
+    fileList.classList.remove("hidden");
+    if (successPanel) successPanel.classList.add("hidden");
+    fileNameDisplay.textContent = label;
+    if (fileChipIcon) fileChipIcon.textContent = icon || "attach_file";
+  }
+
+  function clearFolderPending() {
+    pendingFolder = null;
+    window.__swiftSendLooseFiles = null;
+    if (folderInput) folderInput.value = "";
+  }
+
+  function setFolderPending(entries, folderName) {
+    if (!entries || !entries.length) {
+      window.alert("Pasta vazia ou sem arquivos legíveis.");
+      return;
+    }
+    window.__swiftSendLooseFiles = null;
+    pendingFolder = {
+      entries: entries,
+      folderName: folderName || (window.SwiftSendZip && window.SwiftSendZip.folderNameFromEntries(entries)) || "pasta",
+    };
+    fileInput.value = "";
+    fileInput.removeAttribute("required");
+    showSelection(
+      "Pasta “" + pendingFolder.folderName + "” · " + entries.length + " arquivo(s) → ZIP",
+      "folder_zip"
+    );
+  }
+
   function updateFileName() {
+    clearFolderPending();
+    fileInput.setAttribute("required", "required");
     if (fileInput.files.length > 0) {
-      fileList.classList.remove("hidden");
-      if (successPanel) successPanel.classList.add("hidden");
       if (fileInput.files.length === 1) {
-        fileNameDisplay.textContent = fileInput.files[0].name;
+        showSelection(fileInput.files[0].name, "attach_file");
       } else {
-        fileNameDisplay.textContent = fileInput.files.length + " arquivos selecionados";
+        showSelection(fileInput.files.length + " arquivos selecionados", "attach_file");
       }
+    } else {
+      fileList.classList.add("hidden");
     }
   }
 
   fileInput.addEventListener("change", updateFileName);
+
+  if (folderPickBtn && folderInput) {
+    folderPickBtn.addEventListener("click", function () {
+      folderInput.click();
+    });
+    folderInput.addEventListener("change", function () {
+      if (!folderInput.files.length || !window.SwiftSendZip) return;
+      var entries = window.SwiftSendZip.entriesFromFileList(folderInput.files);
+      setFolderPending(entries, window.SwiftSendZip.folderNameFromEntries(entries));
+    });
+  }
 
   if (dropZone) {
     ["dragenter", "dragover"].forEach(function (eventName) {
@@ -79,18 +136,53 @@
     });
 
     dropZone.addEventListener("drop", function (e) {
-      if (e.dataTransfer && e.dataTransfer.files.length) {
-        fileInput.files = e.dataTransfer.files;
-        updateFileName();
+      if (!e.dataTransfer) return;
+      if (!window.SwiftSendZip) {
+        if (e.dataTransfer.files.length) {
+          fileInput.files = e.dataTransfer.files;
+          updateFileName();
+        }
+        return;
       }
+      window.SwiftSendZip
+        .collectFromDataTransfer(e.dataTransfer)
+        .then(function (result) {
+          if (result.kind === "folder") {
+            setFolderPending(result.entries, result.folderName);
+            return;
+          }
+          if (result.entries.length) {
+            clearFolderPending();
+            fileInput.removeAttribute("required");
+            window.__swiftSendLooseFiles = result.entries.map(function (item) {
+              return item.file;
+            });
+            try {
+              fileInput.files = e.dataTransfer.files;
+              if (fileInput.files && fileInput.files.length) {
+                window.__swiftSendLooseFiles = null;
+                fileInput.setAttribute("required", "required");
+                updateFileName();
+                return;
+              }
+            } catch (_err) {
+              /* DataTransfer assignment may fail in some WebViews */
+            }
+            showSelection(
+              result.entries.length === 1
+                ? result.entries[0].file.name
+                : result.entries.length + " arquivos selecionados",
+              "attach_file"
+            );
+          }
+        })
+        .catch(function (err) {
+          window.alert(err.message || "Não foi possível ler a pasta.");
+        });
     });
   }
 
-  form.addEventListener("submit", function (event) {
-    event.preventDefault();
-    if (!fileInput.files.length) return;
-
-    const formData = new FormData(form);
+  function sendFormData(formData) {
     const xhr = new XMLHttpRequest();
     var startedAt = Date.now();
     var lastLoaded = 0;
@@ -102,8 +194,7 @@
     statusText.classList.remove("text-success", "text-danger");
     setMeter("0%", "—", "—", "Iniciando envio…");
     progressBar.style.width = "0%";
-    submitBtn.disabled = true;
-    submitBtn.classList.add("opacity-50", "cursor-not-allowed");
+    setBusy(true);
 
     xhr.upload.onprogress = function (e) {
       if (!e.lengthComputable) return;
@@ -142,19 +233,56 @@
       } else {
         statusText.textContent = "Erro ao enviar. Tente novamente.";
         statusText.classList.add("text-danger");
-        submitBtn.disabled = false;
-        submitBtn.classList.remove("opacity-50", "cursor-not-allowed");
+        setBusy(false);
       }
     };
 
     xhr.onerror = function () {
       statusText.textContent = "Erro de rede ao enviar.";
       statusText.classList.add("text-danger");
-      submitBtn.disabled = false;
-      submitBtn.classList.remove("opacity-50", "cursor-not-allowed");
+      setBusy(false);
     };
 
     xhr.open("POST", "/api/upload", true);
     xhr.send(formData);
+  }
+
+  form.addEventListener("submit", function (event) {
+    event.preventDefault();
+
+    var looseFiles = window.__swiftSendLooseFiles;
+    if (pendingFolder && window.SwiftSendZip) {
+      progressContainer.classList.remove("hidden");
+      statusText.classList.remove("hidden", "text-success", "text-danger");
+      setMeter("0%", "—", "—", "Compactando pasta…");
+      progressBar.style.width = "0%";
+      setBusy(true);
+      window.SwiftSendZip
+        .zipEntries(pendingFolder.entries, { name: pendingFolder.folderName })
+        .then(function (zipFile) {
+          var formData = new FormData();
+          formData.append("file", zipFile, zipFile.name);
+          sendFormData(formData);
+        })
+        .catch(function (err) {
+          statusText.textContent = err.message || "Falha ao criar o ZIP.";
+          statusText.classList.add("text-danger");
+          setBusy(false);
+        });
+      return;
+    }
+
+    if (looseFiles && looseFiles.length) {
+      var formDataLoose = new FormData();
+      for (var i = 0; i < looseFiles.length; i++) {
+        formDataLoose.append("file", looseFiles[i]);
+      }
+      window.__swiftSendLooseFiles = null;
+      sendFormData(formDataLoose);
+      return;
+    }
+
+    if (!fileInput.files.length) return;
+    sendFormData(new FormData(form));
   });
 })();

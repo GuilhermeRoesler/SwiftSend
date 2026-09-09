@@ -11,7 +11,7 @@
     }, 2800);
   }
 
-  document.querySelectorAll("[data-action], #openInOsBtn, #dropZone, #fileInput").forEach(function (el) {
+  document.querySelectorAll("[data-action], #openInOsBtn, #dropZone, #fileInput, #folderPickBtn, #folderInput").forEach(function (el) {
     el.addEventListener("click", function (e) {
       e.preventDefault();
       e.stopPropagation();

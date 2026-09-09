@@ -16,13 +16,15 @@ shared/
 │   ├── dashboard.html   # host (localhost)
 │   ├── home.html        # visitante
 │   ├── browse.html      # lista / download
-│   ├── upload.html      # envio
-│   └── manager.html     # host: Recebidos / Públicos (listar, DnD, renomear, apagar)
+│   ├── upload.html      # envio (arquivos ou pasta→ZIP)
+│   └── manager.html     # host: Recebidos / Públicos (listar, DnD, pasta→ZIP, renomear, apagar)
 ├── static/
 │   ├── css/app.css
 │   ├── js/app.js        # copy, QR, ícones por tipo
 │   ├── js/upload.js
 │   ├── js/manager.js    # ações host + upload para pastas gerenciadas
+│   ├── js/folder-zip.js # selecionar/arrastar pasta → ZIP (fflate)
+│   ├── js/fflate.min.js # compactação local (sem CDN)
 │   ├── js/qrcode.js     # QR local (sem CDN)
 │   ├── fonts/           # Sora + JetBrains Mono + Material Symbols
 │   ├── icon.png         # 512 — instaladores / app desktop
@@ -39,7 +41,7 @@ Demo estática (GitHub Pages): `python demo/build.py` → `demo/dist/` (template
 - Visual: identidade própria (Sora + JetBrains Mono, azul/teal sobre ink), assets **locais** (sem CDN obrigatório).
 - Templates compatíveis com **Jinja2 e Fluid** — não introduzir filtros/tags só de um motor sem equivalente no outro.
 - Identificadores de rotas/API em inglês (`/api/upload`, `/browse`); cópia visível em PT.
-- Upload: `upload.js` (XHR + progresso com velocidade/ETA + drag-and-drop) — manter contrato com `POST /api/upload`.
+- Upload: `upload.js` + `folder-zip.js` (XHR + progresso + pasta→ZIP) — manter contrato com `POST /api/upload`.
 
 ## Páginas
 
@@ -48,8 +50,8 @@ Demo estática (GitHub Pages): `python demo/build.py` → `demo/dist/` (template
 | `dashboard.html` | Host | Cockpit: link+QR dominantes, métrica densa, howto compacto se `received_count == 0` |
 | `home.html` | Visitante | Hero de marca (wordmark) + cena LAN + Baixar / Enviar |
 | `browse.html` | Visitante | Lista flat com ícone por tipo + download |
-| `upload.html` | Visitante | Drop zone + transfer meter (%, velocidade, ETA) + sucesso |
-| `manager.html` | Host | Espelha Recebidos ou Públicos: DnD, renomear, apagar, abrir no SO |
+| `upload.html` | Visitante | Drop zone + pasta→ZIP + transfer meter (%, velocidade, ETA) + sucesso |
+| `manager.html` | Host | Espelha Recebidos ou Públicos: DnD, pasta→ZIP, renomear, apagar, abrir no SO |
 
 ## Ao editar
 

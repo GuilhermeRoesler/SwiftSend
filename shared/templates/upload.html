@@ -32,7 +32,7 @@
                     Envio
                 </p>
                 <h1 class="page-title">Enviar arquivos</h1>
-                <p class="page-sub">Arraste arquivos grandes. Velocidade e ETA em tempo real.</p>
+                <p class="page-sub">Arraste arquivos ou uma pasta. Pastas viram ZIP antes do envio.</p>
             </div>
 
             <form id="uploadForm" action="/api/upload" method="post" enctype="multipart/form-data" class="upload-form">
@@ -43,14 +43,22 @@
                             <span class="material-symbols-outlined text-3xl">cloud_upload</span>
                         </div>
                         <p class="font-semibold text-ink">Arraste arquivos ou clique para escolher</p>
-                        <p class="text-sm text-muted mt-1">Vários arquivos · pensado para transferências pesadas</p>
+                        <p class="text-sm text-muted mt-1">Vários arquivos · pasta vira um ZIP</p>
                     </div>
+                </div>
+
+                <div class="drop-zone-actions">
+                    <input type="file" id="folderInput" class="sr-only" webkitdirectory directory multiple tabindex="-1" aria-hidden="true">
+                    <button type="button" class="btn-secondary w-full" id="folderPickBtn">
+                        <span class="material-symbols-outlined" aria-hidden="true">folder_zip</span>
+                        Selecionar pasta (ZIP)
+                    </button>
                 </div>
 
                 <div id="fileList" class="hidden">
                     <p class="field-label mb-2">Selecionado</p>
                     <div class="file-chip">
-                        <span class="material-symbols-outlined text-brand" aria-hidden="true">attach_file</span>
+                        <span class="material-symbols-outlined text-brand" id="fileChipIcon" aria-hidden="true">attach_file</span>
                         <span id="fileNameDisplay" class="text-sm font-medium truncate min-w-0"></span>
                     </div>
                 </div>
@@ -83,6 +91,8 @@
             </form>
         </div>
     </main>
+    <script src="/static/js/fflate.min.js"></script>
+    <script src="/static/js/folder-zip.js"></script>
     <script src="/static/js/upload.js"></script>
 </body>
 </html>

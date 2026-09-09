@@ -34,7 +34,7 @@ Python (Flask) e C# (Kestrel) devem expor o **mesmo** contrato. Mudança numa st
 | GET | `/api/host/open?folder=` | **Host only**: abre pasta no SO (`received` \| `public`); JSON |
 | POST | `/api/host/delete` | **Host only**: JSON `{folder,name}` → apaga arquivo |
 | POST | `/api/host/rename` | **Host only**: JSON `{folder,name,new_name}` → renomeia |
-| POST | `/api/host/upload` | **Host only**: multipart `file` + `folder` → grava sem timestamp |
+| POST | `/api/host/upload` | **Host only**: multipart `file` + `folder` → grava sem timestamp (pasta na UI → `.zip`) |
 
 Detalhes de payload, sanitização e diferenças menores Python/C#: [reference.md](reference.md).
 

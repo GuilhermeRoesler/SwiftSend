@@ -195,6 +195,18 @@ a {
 .overflow-hidden { overflow: hidden; }
 .hidden { display: none !important; }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .rounded-full { border-radius: 9999px; }
 .rounded-xl { border-radius: var(--radius-md); }
 .rounded-2xl { border-radius: var(--radius-lg); }
@@ -1227,6 +1239,18 @@ a {
 
 .drop-zone.is-dragover {
   transform: scale(1.01);
+}
+
+.drop-zone-actions {
+  margin-top: -0.35rem;
+}
+
+.drop-zone-actions--compact {
+  margin-top: 0.65rem;
+}
+
+.drop-zone-actions .btn-secondary {
+  justify-content: center;
 }
 
 .drop-icon {
