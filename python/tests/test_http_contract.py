@@ -60,7 +60,9 @@ def test_api_upload_keeps_original_name(client, folders):
 def test_api_upload_collision_requires_replace(client, folders):
     upload, _public = folders
     data = {"file": (BytesIO(b"one"), "nota.txt")}
-    assert client.post("/api/upload", data=data, content_type="multipart/form-data").status_code == 200
+    assert (
+        client.post("/api/upload", data=data, content_type="multipart/form-data").status_code == 200
+    )
 
     data2 = {"file": (BytesIO(b"two"), "nota.txt")}
     conflict = client.post("/api/upload", data=data2, content_type="multipart/form-data")
@@ -74,7 +76,9 @@ def test_api_upload_collision_requires_replace(client, folders):
 def test_api_upload_replace_overwrites(client, folders):
     upload, _public = folders
     data = {"file": (BytesIO(b"one"), "nota.txt")}
-    assert client.post("/api/upload", data=data, content_type="multipart/form-data").status_code == 200
+    assert (
+        client.post("/api/upload", data=data, content_type="multipart/form-data").status_code == 200
+    )
 
     data2 = {"file": (BytesIO(b"two"), "nota.txt"), "replace": "1"}
     replaced = client.post("/api/upload", data=data2, content_type="multipart/form-data")

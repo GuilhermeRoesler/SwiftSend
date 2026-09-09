@@ -21,4 +21,4 @@ def test_sanitize_rejects_dot_names():
 
 
 def test_sanitize_replaces_invalid_chars():
-    assert sanitize_basename('a<b>c:d.txt') == "a_b_c_d.txt"
+    assert sanitize_basename("a<b>c:d.txt") == "a_b_c_d.txt"

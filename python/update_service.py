@@ -10,9 +10,9 @@ import sys
 import tempfile
 import threading
 import urllib.request
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
 
 GITHUB_REPO = "GuilhermeRoesler/SwiftSend"
 GITHUB_API_LATEST = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
@@ -191,7 +191,11 @@ class UpdateService:
         with self._lock:
             if self._status.applying:
                 return {"success": False, "error": "Atualização já em andamento"}
-            if not self._status.available or not self._status.download_url or not self._status.asset_name:
+            if (
+                not self._status.available
+                or not self._status.download_url
+                or not self._status.asset_name
+            ):
                 return {"success": False, "error": "Nenhuma atualização disponível"}
             self._status.applying = True
             url = self._status.download_url
@@ -211,7 +215,10 @@ class UpdateService:
         safe_name = Path(asset_name).name
         dest = self._download_dir / safe_name
         req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-        with urllib.request.urlopen(req, timeout=DOWNLOAD_TIMEOUT_SEC) as resp, open(dest, "wb") as out:
+        with (
+            urllib.request.urlopen(req, timeout=DOWNLOAD_TIMEOUT_SEC) as resp,
+            open(dest, "wb") as out,
+        ):
             shutil.copyfileobj(resp, out)
         if dest.stat().st_size <= 0:
             raise RuntimeError("Download vazio")

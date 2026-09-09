@@ -321,6 +321,12 @@ a {
   transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
 }
 
+/* `display` acima sobrescreve o UA stylesheet de [hidden]; sem isto o botão
+   aparece mesmo quando a API diz que não há update. */
+.update-btn[hidden] {
+  display: none !important;
+}
+
 .update-btn:hover:not(:disabled) {
   background: rgba(37, 99, 235, 0.16);
   border-color: rgba(37, 99, 235, 0.42);

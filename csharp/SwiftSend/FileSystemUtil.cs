@@ -7,7 +7,8 @@ internal static class FileSystemUtil
 {
     public static string? TrySanitizeFileName(string name)
     {
-        var file = Path.GetFileName(name).Trim();
+        // Aceita / e \ como separadores (path Windows em host Linux).
+        var file = Path.GetFileName(name.Replace('\\', '/')).Trim();
         if (string.IsNullOrWhiteSpace(file) || file is "." or "..")
             return null;
         foreach (var c in Path.GetInvalidFileNameChars())

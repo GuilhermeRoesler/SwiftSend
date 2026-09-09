@@ -40,7 +40,8 @@ def open_folder(path: Path) -> None:
 
 def sanitize_basename(name: str) -> str:
     """Nome de arquivo seguro (sem path). Vazio / . / .. → \"\"."""
-    base = Path(name).name.strip()
+    # Aceita / e \ como separadores (path Windows em host Linux).
+    base = Path(name.replace("\\", "/")).name.strip()
     if not base or base in (".", ".."):
         return ""
     for ch in _INVALID_FILENAME_CHARS:

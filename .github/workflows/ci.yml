@@ -108,10 +108,10 @@ jobs:
             '"/api/host/upload"'
           )
           for route in "${routes[@]}"; do
-            grep -qF "$route" python/main.py || { echo "Missing in Python: $route"; exit 1; }
+            grep -qF "$route" python/routes.py || { echo "Missing in Python: $route"; exit 1; }
             grep -qF "$route" csharp/SwiftSend/WebServer.cs || { echo "Missing in C#: $route"; exit 1; }
           done
-          grep -qE 'download' python/main.py
+          grep -qE 'download' python/routes.py
           grep -qE 'download' csharp/SwiftSend/WebServer.cs
           grep -qF '16 * 1024 * 1024 * 1024' python/main.py
           grep -qF '16L * 1024 * 1024 * 1024' csharp/SwiftSend/WebServer.cs
