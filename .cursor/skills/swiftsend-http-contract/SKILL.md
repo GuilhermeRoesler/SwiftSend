@@ -27,14 +27,14 @@ Python (Flask) e C# (Kestrel) devem expor o **mesmo** contrato. Mudança numa st
 | GET | `/` | `Host` contém `localhost` ou `127.0.0.1` → dashboard; senão → home pública |
 | GET | `/browse` | Lista `arquivos_publicos/` |
 | GET | `/upload` | Página de envio |
-| POST | `/api/upload` | Multipart `file` → `arquivos_recebidos/` (prefixo `yyyyMMdd_HHmmss_`); JSON `{success:true}` ou 400 |
+| POST | `/api/upload` | Multipart `file` → `arquivos_recebidos/` (colisão → `nome-2.ext`); JSON `{success:true}` ou 400 |
 | GET | `/download/<filename>` | Attachment de `arquivos_publicos/` |
 | GET | `/upload_manager` | **Host only**: tela Recebidos (espelha a pasta); LAN → redirect `/` |
 | GET | `/public_manager` | **Host only**: tela Públicos; LAN → redirect `/` |
 | GET | `/api/host/open?folder=` | **Host only**: abre pasta no SO (`received` \| `public`); JSON |
 | POST | `/api/host/delete` | **Host only**: JSON `{folder,name}` → apaga arquivo |
 | POST | `/api/host/rename` | **Host only**: JSON `{folder,name,new_name}` → renomeia |
-| POST | `/api/host/upload` | **Host only**: multipart `file` + `folder` → grava sem timestamp (pasta na UI → `.zip`) |
+| POST | `/api/host/upload` | **Host only**: multipart `file` + `folder` → grava com nome sanitizado; colisão → `nome-2.ext` (pasta na UI → `.zip`) |
 
 Detalhes de payload, sanitização e diferenças menores Python/C#: [reference.md](reference.md).
 

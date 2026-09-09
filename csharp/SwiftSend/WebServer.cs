@@ -165,8 +165,7 @@ internal static class WebServer
                     continue;
 
                 var safe = SanitizeFileName(file.FileName);
-                var stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss_");
-                var dest = Path.Combine(AppPaths.UploadFolder, stamp + safe);
+                var dest = UniqueDest(AppPaths.UploadFolder, safe);
                 await using var stream = File.Create(dest);
                 await file.CopyToAsync(stream);
             }
@@ -348,7 +347,7 @@ internal static class WebServer
         var ext = Path.GetExtension(filename);
         for (var n = 2; ; n++)
         {
-            var candidate = Path.Combine(folder, $"{stem}_{n}{ext}");
+            var candidate = Path.Combine(folder, $"{stem}-{n}{ext}");
             if (!File.Exists(candidate))
                 return candidate;
         }

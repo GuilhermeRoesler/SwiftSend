@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from io import BytesIO
 from pathlib import Path
 
@@ -39,7 +38,7 @@ def test_upload_page(client):
     assert response.status_code == 200
 
 
-def test_api_upload_saves_with_timestamp(client, folders):
+def test_api_upload_keeps_original_name(client, folders):
     upload, _public = folders
     data = {"file": (BytesIO(b"payload"), "nota.txt")}
     response = client.post("/api/upload", data=data, content_type="multipart/form-data")
@@ -48,8 +47,24 @@ def test_api_upload_saves_with_timestamp(client, folders):
 
     saved = list(upload.iterdir())
     assert len(saved) == 1
-    assert re.match(r"^\d{8}_\d{6}_nota\.txt$", saved[0].name)
+    assert saved[0].name == "nota.txt"
     assert saved[0].read_bytes() == b"payload"
+
+
+def test_api_upload_collision_suffix(client, folders):
+    upload, _public = folders
+    data = {"file": (BytesIO(b"one"), "nota.txt")}
+    assert client.post("/api/upload", data=data, content_type="multipart/form-data").status_code == 200
+    data2 = {"file": (BytesIO(b"two"), "nota.txt")}
+    assert client.post("/api/upload", data=data2, content_type="multipart/form-data").status_code == 200
+    data3 = {"file": (BytesIO(b"three"), "nota.txt")}
+    assert client.post("/api/upload", data=data3, content_type="multipart/form-data").status_code == 200
+
+    names = sorted(p.name for p in upload.iterdir())
+    assert names == ["nota-2.txt", "nota-3.txt", "nota.txt"]
+    assert (upload / "nota.txt").read_bytes() == b"one"
+    assert (upload / "nota-2.txt").read_bytes() == b"two"
+    assert (upload / "nota-3.txt").read_bytes() == b"three"
 
 
 def test_api_upload_multiple_files(client, folders):

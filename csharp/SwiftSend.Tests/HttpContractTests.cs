@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Xunit;
@@ -90,7 +89,7 @@ public sealed class HttpContractTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ApiUpload_SavesWithTimestamp()
+    public async Task ApiUpload_KeepsOriginalName()
     {
         using var content = BuildMultipart(("nota.txt", "payload"u8.ToArray()));
         using var response = await Client.PostAsync("/api/upload", content);
@@ -101,8 +100,28 @@ public sealed class HttpContractTests : IAsyncLifetime
 
         var saved = Directory.GetFiles(AppPaths.UploadFolder);
         Assert.Single(saved);
-        Assert.Matches(new Regex(@"^\d{8}_\d{6}_nota\.txt$"), Path.GetFileName(saved[0]));
+        Assert.Equal("nota.txt", Path.GetFileName(saved[0]));
         Assert.Equal("payload"u8.ToArray(), await File.ReadAllBytesAsync(saved[0]));
+    }
+
+    [Fact]
+    public async Task ApiUpload_CollisionSuffix()
+    {
+        using (var content = BuildMultipart(("nota.txt", "one"u8.ToArray())))
+            Assert.Equal(HttpStatusCode.OK, (await Client.PostAsync("/api/upload", content)).StatusCode);
+        using (var content = BuildMultipart(("nota.txt", "two"u8.ToArray())))
+            Assert.Equal(HttpStatusCode.OK, (await Client.PostAsync("/api/upload", content)).StatusCode);
+        using (var content = BuildMultipart(("nota.txt", "three"u8.ToArray())))
+            Assert.Equal(HttpStatusCode.OK, (await Client.PostAsync("/api/upload", content)).StatusCode);
+
+        var names = Directory.GetFiles(AppPaths.UploadFolder)
+            .Select(Path.GetFileName)
+            .OrderBy(n => n, StringComparer.Ordinal)
+            .ToArray();
+        Assert.Equal(new[] { "nota-2.txt", "nota-3.txt", "nota.txt" }, names);
+        Assert.Equal("one"u8.ToArray(), await File.ReadAllBytesAsync(Path.Combine(AppPaths.UploadFolder, "nota.txt")));
+        Assert.Equal("two"u8.ToArray(), await File.ReadAllBytesAsync(Path.Combine(AppPaths.UploadFolder, "nota-2.txt")));
+        Assert.Equal("three"u8.ToArray(), await File.ReadAllBytesAsync(Path.Combine(AppPaths.UploadFolder, "nota-3.txt")));
     }
 
     [Fact]

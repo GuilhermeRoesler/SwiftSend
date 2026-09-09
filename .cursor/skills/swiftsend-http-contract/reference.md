@@ -4,7 +4,7 @@
 
 - Campo multipart: `file` (um ou vários).
 - Destino: `{DATA_ROOT}/arquivos_recebidos/`.
-- Nome no disco: `{yyyyMMdd_HHmmss_}{nomeSanitizado}`.
+- Nome no disco: nome sanitizado; se já existir → `nome-2.ext`, `nome-3.ext`, …
 - Sucesso: JSON `{ "success": true }` (HTTP 200).
 - Erro (sem arquivo / falha): HTTP 400 + JSON de erro.
 - **Pasta inteira (UI):** o cliente compacta a pasta em um `.zip` no navegador (`fflate`) e envia como um único `file`. Sem rota nova; estrutura de pastas fica dentro do ZIP.
@@ -30,7 +30,7 @@
 | `GET /api/host/open?folder=received\|public` | Host: abre pasta no SO (Python `startfile`/`open`/`xdg-open`; C# `explorer`). JSON `{success:true}`. |
 | `POST /api/host/delete` | Host: `{ "folder", "name" }` — apaga arquivo sob a pasta gerenciada. |
 | `POST /api/host/rename` | Host: `{ "folder", "name", "new_name" }` — 409 se destino existe. |
-| `POST /api/host/upload` | Host: multipart `file` + form `folder` — grava com nome sanitizado (sem timestamp); colisão → `nome_2.ext`. Pasta na UI → um `.zip` (compactação no cliente). |
+| `POST /api/host/upload` | Host: multipart `file` + form `folder` — grava com nome sanitizado; colisão → `nome-2.ext`. Pasta na UI → um `.zip` (compactação no cliente). |
 
 Todas as rotas `/api/host/*` e as páginas `*_manager` exigem `Host` com `localhost` ou `127.0.0.1` (403 / redirect caso contrário).
 

@@ -3,7 +3,6 @@ import os
 import socket
 import sys
 import threading
-from datetime import datetime
 from pathlib import Path
 
 from flask import Flask, jsonify, redirect, render_template, request, send_from_directory, url_for
@@ -202,7 +201,7 @@ def unique_dest(folder: Path, filename: str) -> Path:
     suffix = dest.suffix
     n = 2
     while True:
-        candidate = folder / f"{stem}_{n}{suffix}"
+        candidate = folder / f"{stem}-{n}{suffix}"
         if not candidate.exists():
             return candidate
         n += 1
@@ -373,8 +372,10 @@ def upload_file():
         if not file.filename:
             continue
         filename = secure_filename(file.filename)
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_")
-        file.save(os.path.join(app.config["UPLOAD_FOLDER"], timestamp + filename))
+        if not filename:
+            continue
+        dest = unique_dest(UPLOAD_FOLDER, filename)
+        file.save(str(dest))
 
     return jsonify({"success": True}), 200
 
