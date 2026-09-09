@@ -61,15 +61,6 @@ jobs:
           cache: pip
           cache-dependency-path: python/requirements.txt
 
-      - name: Stamp VERSION from tag
-        working-directory: ${{ github.workspace }}
-        shell: bash
-        run: |
-          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-            echo "${GITHUB_REF_NAME#v}" > VERSION
-          fi
-          echo "VERSION=$(cat VERSION)"
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -80,6 +71,8 @@ jobs:
         shell: bash
 
       - name: Build
+        env:
+          SWIFTSEND_VERSION: ${{ github.ref_type == 'tag' && github.ref_name || '0.0.0-dev' }}
         run: python build.py
 
       - name: Package artifact
@@ -131,15 +124,6 @@ jobs:
       - name: Install Inno Setup
         shell: pwsh
         run: choco install innosetup -y --no-progress
-
-      - name: Stamp VERSION from tag
-        shell: pwsh
-        run: |
-          if ($env:GITHUB_REF_TYPE -eq "tag") {
-            $version = if ($env:GITHUB_REF_NAME -match '^v(.+)$') { $Matches[1] } else { $env:GITHUB_REF_NAME }
-            Set-Content -Path VERSION -Value $version -NoNewline -Encoding utf8
-          }
-          Get-Content VERSION
 
       - name: Build installer
         shell: pwsh

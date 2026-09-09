@@ -515,7 +515,12 @@ if __name__ == "__main__":
     import webview
 
     configure_windows_app_identity()
-    UPDATE_SERVICE.start_background_check()
+    # Só consulta GitHub em build empacotado; em dev o VERSION local pode
+    # ficar atrás do release e o botão apareceria sem necessidade.
+    if getattr(sys, "frozen", False):
+        UPDATE_SERVICE.start_background_check()
+    else:
+        UPDATE_SERVICE.mark_skipped("dev")
 
     t = threading.Thread(target=start_server, daemon=True)
     t.start()

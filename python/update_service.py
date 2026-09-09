@@ -139,6 +139,16 @@ class UpdateService:
         thread = threading.Thread(target=self.check_now, name="SwiftSendUpdateCheck", daemon=True)
         thread.start()
 
+    def mark_skipped(self, reason: str | None = None) -> None:
+        """Marca checagem concluída sem update (ex.: modo desenvolvimento)."""
+        with self._lock:
+            self._status.checked = True
+            self._status.available = False
+            self._status.latest = None
+            self._status.download_url = None
+            self._status.asset_name = None
+            self._status.error = reason
+
     def check_now(self) -> UpdateStatus:
         try:
             data = self._fetch_json(GITHUB_API_LATEST)

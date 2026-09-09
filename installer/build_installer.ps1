@@ -88,14 +88,20 @@ Ou passe -IsccPath 'C:\...\ISCC.exe'
 }
 
 $versionInfo = Get-VersionInfo $Version
+$cleanVersion = $Version.TrimStart("v", "V")
 New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
+
+# VERSION ao lado do exe para o instalador (não altera VERSION do repo).
+$distDir = Join-Path $PythonDir "dist"
+New-Item -ItemType Directory -Force -Path $distDir | Out-Null
+Set-Content -LiteralPath (Join-Path $distDir "VERSION") -Value $cleanVersion -NoNewline -Encoding utf8
 
 Write-Host "`n--- Inno Setup ---"
 Write-Host "ISCC: $iscc"
 Write-Host "VersionInfo: $versionInfo"
 
 & $iscc `
-    "/DMyAppVersion=$Version" `
+    "/DMyAppVersion=$cleanVersion" `
     "/DMyAppVersionInfo=$versionInfo" `
     $IssPath
 

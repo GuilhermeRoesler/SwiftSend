@@ -90,6 +90,19 @@ internal sealed class UpdateService
         });
     }
 
+    public void MarkSkipped(string? reason = null)
+    {
+        lock (_lock)
+        {
+            _status.Checked = true;
+            _status.Available = false;
+            _status.Latest = null;
+            _status.DownloadUrl = null;
+            _status.AssetName = null;
+            _status.Error = reason;
+        }
+    }
+
     public async Task<UpdateStatus> CheckNowAsync()
     {
         try

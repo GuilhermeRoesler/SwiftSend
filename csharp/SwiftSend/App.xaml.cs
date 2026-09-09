@@ -16,7 +16,11 @@ public partial class App : Application
         {
             _cts = new CancellationTokenSource();
             _webApp = WebServer.Build();
-            WebServer.Updates.StartBackgroundCheck();
+            // Em builds com VERSION *-dev, não consulta o GitHub (evita falso positivo).
+            if (AppPaths.AppVersion.Contains("-dev", StringComparison.OrdinalIgnoreCase))
+                WebServer.Updates.MarkSkipped("dev");
+            else
+                WebServer.Updates.StartBackgroundCheck();
             await _webApp.StartAsync(_cts.Token);
             await WaitForServerAsync();
 
