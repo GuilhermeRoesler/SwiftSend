@@ -35,6 +35,7 @@ Python (Flask) e C# (Kestrel) devem expor o **mesmo** contrato. Mudança numa st
 | POST | `/api/host/delete` | **Host only**: JSON `{folder,name}` → apaga arquivo |
 | POST | `/api/host/rename` | **Host only**: JSON `{folder,name,new_name}` → renomeia |
 | POST | `/api/host/upload` | **Host only**: multipart `file` + `folder` → grava com nome sanitizado; colisão → `nome-2.ext` (pasta na UI → `.zip`) |
+| GET/POST | `/api/host/update` | **Host only**: status / aplica atualização (GitHub Releases); LAN → 403 |
 
 Detalhes de payload, sanitização e diferenças menores Python/C#: [reference.md](reference.md).
 

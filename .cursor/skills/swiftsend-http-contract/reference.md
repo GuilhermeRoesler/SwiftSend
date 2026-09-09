@@ -31,6 +31,8 @@
 | `POST /api/host/delete` | Host: `{ "folder", "name" }` — apaga arquivo sob a pasta gerenciada. |
 | `POST /api/host/rename` | Host: `{ "folder", "name", "new_name" }` — 409 se destino existe. |
 | `POST /api/host/upload` | Host: multipart `file` + form `folder` — grava com nome sanitizado; colisão → `nome-2.ext`. Pasta na UI → um `.zip` (compactação no cliente). |
+| `GET /api/host/update` | Host: JSON `{current,latest,available,checked,error,…}`. Checagem em background no startup (GitHub Releases). |
+| `POST /api/host/update` | Host: baixa o artefato da plataforma e dispara `scripts/apply_update.*` (encerra o app com force kill em 10s; só então abre o instalador). |
 
 Todas as rotas `/api/host/*` e as páginas `*_manager` exigem `Host` com `localhost` ou `127.0.0.1` (403 / redirect caso contrário).
 

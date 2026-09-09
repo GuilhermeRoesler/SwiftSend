@@ -297,6 +297,52 @@ a {
   font-weight: 600;
 }
 
+.header-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.update-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(37, 99, 235, 0.28);
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--brand);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.update-btn:hover:not(:disabled) {
+  background: rgba(37, 99, 235, 0.16);
+  border-color: rgba(37, 99, 235, 0.42);
+}
+
+.update-btn:disabled {
+  opacity: 0.72;
+  cursor: wait;
+}
+
+.update-btn .material-symbols-outlined {
+  font-size: 1.05rem;
+}
+
+.update-btn.is-busy .material-symbols-outlined {
+  animation: update-spin 0.9s linear infinite;
+}
+
+@keyframes update-spin {
+  to { transform: rotate(360deg); }
+}
+
 .live-dot {
   width: 0.5rem;
   height: 0.5rem;
@@ -641,6 +687,7 @@ a {
 .btn-ghost:focus-visible,
 .btn-back:focus-visible,
 .btn-icon:focus-visible,
+.update-btn:focus-visible,
 .copy-btn:focus-visible,
 .btn-download:focus-visible,
 .action-primary:focus-visible,

@@ -235,6 +235,26 @@ public sealed class HttpContractTests : IAsyncLifetime
         deleteReq.Headers.Host = "192.168.0.10:5000";
         using var deleted = await Client.SendAsync(deleteReq);
         Assert.Equal(HttpStatusCode.Forbidden, deleted.StatusCode);
+
+        using var updateReq = new HttpRequestMessage(HttpMethod.Get, "/api/host/update");
+        updateReq.Headers.Host = "192.168.0.10:5000";
+        using var update = await Client.SendAsync(updateReq);
+        Assert.Equal(HttpStatusCode.Forbidden, update.StatusCode);
+    }
+
+    [Fact]
+    public async Task HostUpdate_StatusOnLocalhost()
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/host/update");
+        request.Headers.Host = "127.0.0.1:5000";
+        using var response = await Client.SendAsync(request);
+        var body = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(body);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(doc.RootElement.TryGetProperty("current", out _));
+        Assert.True(doc.RootElement.TryGetProperty("available", out _));
+        Assert.True(doc.RootElement.TryGetProperty("checked", out _));
     }
 
     [Fact]

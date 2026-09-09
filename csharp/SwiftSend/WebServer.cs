@@ -27,11 +27,16 @@ internal sealed class WebServerOptions
 internal static class WebServer
 {
     private static Action<string> _openFolder = DefaultOpenFolder;
+    private static UpdateService? _updates;
+
+    public static UpdateService Updates =>
+        _updates ??= new UpdateService(AppPaths.AppVersion, AppPaths.ScriptsDir);
 
     public static WebApplication Build(WebServerOptions? options = null)
     {
         options ??= WebServerOptions.Default;
         _openFolder = options.OpenFolder ?? DefaultOpenFolder;
+        _updates ??= new UpdateService(AppPaths.AppVersion, AppPaths.ScriptsDir);
 
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions
         {
@@ -286,6 +291,19 @@ internal static class WebServer
                 return Results.Json(new { error = "No file part" }, statusCode: 400);
 
             return Results.Json(new { success = true });
+        });
+
+        app.MapMethods("/api/host/update", ["GET", "POST"], async (HttpRequest req) =>
+        {
+            if (!IsDesktopHost(req))
+                return Results.Json(new { error = "Forbidden" }, statusCode: 403);
+
+            if (HttpMethods.IsGet(req.Method))
+                return Results.Json(Updates.Snapshot().ToJson());
+
+            var result = await Updates.ApplyUpdateAsync();
+            var ok = result.TryGetValue("success", out var success) && success is true;
+            return Results.Json(result, statusCode: ok ? 200 : 400);
         });
     }
 

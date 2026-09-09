@@ -16,6 +16,7 @@ public partial class App : Application
         {
             _cts = new CancellationTokenSource();
             _webApp = WebServer.Build();
+            WebServer.Updates.StartBackgroundCheck();
             await _webApp.StartAsync(_cts.Token);
             await WaitForServerAsync();
 

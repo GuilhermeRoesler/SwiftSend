@@ -13,6 +13,8 @@ internal static class AppPaths
     public static string SharedDir { get; }
     public static string TemplatesDir { get; }
     public static string StaticDir { get; }
+    public static string ScriptsDir { get; }
+    public static string AppVersion { get; }
     public static string LocalIp { get; }
     public static string BaseUrl { get; }
 
@@ -25,6 +27,11 @@ internal static class AppPaths
         SharedDir = ResolveSharedDir(DataRoot);
         TemplatesDir = Path.Combine(SharedDir, "templates");
         StaticDir = Path.Combine(SharedDir, "static");
+        ScriptsDir = ResolveScriptsDir(DataRoot);
+        AppVersion = UpdateService.ReadVersion(
+            AppContext.BaseDirectory,
+            DataRoot,
+            Path.GetFullPath(Path.Combine(SharedDir, "..")));
         DefaultUploadFolder = Path.Combine(DataRoot, "arquivos_recebidos");
         DefaultPublicFolder = Path.Combine(DataRoot, "arquivos_publicos");
         Directory.CreateDirectory(DefaultUploadFolder);
@@ -79,6 +86,16 @@ internal static class AppPaths
             return atRoot;
 
         var beside = Path.Combine(AppContext.BaseDirectory, "shared");
+        return Directory.Exists(beside) ? beside : atRoot;
+    }
+
+    private static string ResolveScriptsDir(string dataRoot)
+    {
+        var atRoot = Path.Combine(dataRoot, "scripts");
+        if (Directory.Exists(atRoot))
+            return atRoot;
+
+        var beside = Path.Combine(AppContext.BaseDirectory, "scripts");
         return Directory.Exists(beside) ? beside : atRoot;
     }
 

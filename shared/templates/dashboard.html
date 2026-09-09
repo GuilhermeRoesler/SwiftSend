@@ -17,9 +17,16 @@
             <span class="brand-name">SwiftSend</span>
         </a>
         {% if is_desktop %}
-        <div class="live-pill" title="{{ base_url }}">
-            <span class="live-dot" aria-hidden="true"></span>
-            Sessão ativa
+        <div class="header-status">
+            <div class="live-pill" title="{{ base_url }}">
+                <span class="live-dot" aria-hidden="true"></span>
+                Sessão ativa
+            </div>
+            <button type="button" id="updateBtn" class="update-btn" hidden
+                    aria-live="polite" title="Atualizar para a versão mais recente">
+                <span class="material-symbols-outlined" aria-hidden="true">system_update</span>
+                <span class="update-btn-label">Atualizar</span>
+            </button>
         </div>
         {% endif %}
     </header>

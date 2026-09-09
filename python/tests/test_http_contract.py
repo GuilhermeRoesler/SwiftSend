@@ -206,6 +206,30 @@ def test_host_open_folder(client):
     assert response.get_json() == {"success": True}
 
 
+def test_host_update_status_localhost(client):
+    host = {"Host": "127.0.0.1:5000"}
+    response = client.get("/api/host/update", headers=host)
+    assert response.status_code == 200
+    data = response.get_json()
+    assert "current" in data
+    assert "available" in data
+    assert "checked" in data
+
+
+def test_host_update_forbidden_on_lan(client):
+    response = client.get("/api/host/update", headers={"Host": "192.168.0.10:5000"})
+    assert response.status_code == 403
+
+
+def test_update_version_compare():
+    from update_service import is_newer, normalize_version
+
+    assert normalize_version("v1.2.3") == (1, 2, 3)
+    assert is_newer("v1.0.1", "1.0.0")
+    assert not is_newer("1.0.0", "1.0.0")
+    assert not is_newer("v0.9.9", "1.0.0")
+
+
 def test_host_rename_conflict(client, folders):
     upload, _public = folders
     host = {"Host": "127.0.0.1:5000"}

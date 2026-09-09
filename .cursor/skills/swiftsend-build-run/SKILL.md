@@ -99,3 +99,4 @@ O `csproj` copia `shared/` para output e publish (ao lado do `.exe`). Sem isso a
 - CD: tag `v*` → PyInstaller (win/linux/mac) + instaladores (Inno / AppImage / DMG) + portables Python.
 - Frozen: `DATA_ROOT` = `Documentos/SwiftSend` (pastas `arquivos_*`).
 - Demo Pages: `python demo/build.py` + workflow `.github/workflows/pages.yml` (UI estática a partir de `shared/`).
+- Auto-update: no startup consulta GitHub Releases; botão no dashboard (host). Aplicação via `scripts/apply_update.*` (kill com timeout 10s → instalador).

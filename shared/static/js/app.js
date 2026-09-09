@@ -121,7 +121,89 @@
     }
   }
 
+  function bindUpdateButton() {
+    var btn = document.getElementById("updateBtn");
+    if (!btn) return;
+
+    var label = btn.querySelector(".update-btn-label");
+    var icon = btn.querySelector(".material-symbols-outlined");
+    var latestVersion = "";
+
+    function setBusy(busy, text) {
+      btn.disabled = !!busy;
+      btn.classList.toggle("is-busy", !!busy);
+      if (label && text) label.textContent = text;
+      if (icon) icon.textContent = busy ? "progress_activity" : "system_update";
+    }
+
+    function showAvailable(latest) {
+      latestVersion = latest || "";
+      btn.hidden = false;
+      btn.title = latestVersion
+        ? "Atualizar para a versão " + latestVersion
+        : "Atualizar para a versão mais recente";
+      if (label) {
+        label.textContent = latestVersion ? "Atualizar " + latestVersion : "Atualizar";
+      }
+    }
+
+    function pollStatus(attempt) {
+      var n = attempt || 0;
+      fetch("/api/host/update", { headers: { Accept: "application/json" } })
+        .then(function (res) {
+          if (!res.ok) throw new Error("status " + res.status);
+          return res.json();
+        })
+        .then(function (data) {
+          if (data && data.available) {
+            showAvailable(data.latest || "");
+            return;
+          }
+          if (data && data.checked) return;
+          if (n < 8) {
+            setTimeout(function () {
+              pollStatus(n + 1);
+            }, 700);
+          }
+        })
+        .catch(function () {
+          /* silencioso: sem rede / demo estático */
+        });
+    }
+
+    btn.addEventListener("click", function () {
+      if (btn.disabled) return;
+      setBusy(true, "Baixando…");
+      fetch("/api/host/update", {
+        method: "POST",
+        headers: { Accept: "application/json" },
+      })
+        .then(function (res) {
+          return res.json().then(function (data) {
+            return { ok: res.ok, data: data };
+          });
+        })
+        .then(function (result) {
+          if (!result.ok || !result.data || !result.data.success) {
+            var err =
+              (result.data && result.data.error) || "Não foi possível iniciar a atualização";
+            setBusy(false, latestVersion ? "Atualizar " + latestVersion : "Atualizar");
+            window.alert(err);
+            return;
+          }
+          setBusy(true, "Encerrando…");
+        })
+        .catch(function () {
+          setBusy(false, latestVersion ? "Atualizar " + latestVersion : "Atualizar");
+          window.alert("Falha de rede ao atualizar.");
+        });
+    });
+
+    pollStatus(0);
+  }
+
   applyFileIcons();
   bindCopyButtons();
   renderQr();
+  bindUpdateButton();
 })();

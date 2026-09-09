@@ -8,6 +8,8 @@ from pathlib import Path
 from flask import Flask, jsonify, redirect, render_template, request, send_from_directory, url_for
 from werkzeug.utils import secure_filename
 
+from update_service import UpdateService, read_version
+
 
 def _windows_documents_dir() -> Path:
     """Pasta Documentos do usuário (CSIDL_PERSONAL), com fallback."""
@@ -80,6 +82,24 @@ def get_local_ip() -> str:
 
 LOCAL_IP = get_local_ip()
 BASE_URL = f"http://{LOCAL_IP}:{PORT}"
+
+_version_roots = [APP_ROOT, SHARED_DIR.parent if SHARED_DIR.parent.exists() else APP_ROOT]
+if getattr(sys, "frozen", False):
+    _version_roots.insert(0, Path(getattr(sys, "_MEIPASS", APP_ROOT)))
+else:
+    _version_roots.insert(0, APP_ROOT.parent)
+
+APP_VERSION = read_version(_version_roots)
+if getattr(sys, "frozen", False):
+    _script_candidates = [
+        APP_ROOT / "scripts",
+        Path(getattr(sys, "_MEIPASS", APP_ROOT)) / "scripts",
+    ]
+else:
+    _script_candidates = [APP_ROOT.parent / "scripts", APP_ROOT / "scripts"]
+SCRIPTS_DIR = next((p for p in _script_candidates if p.is_dir()), _script_candidates[0])
+
+UPDATE_SERVICE = UpdateService(APP_VERSION, SCRIPTS_DIR)
 
 
 def get_file_size(filepath: str) -> str:
@@ -353,6 +373,18 @@ def api_host_upload():
     return jsonify({"success": True}), 200
 
 
+@app.route("/api/host/update", methods=["GET", "POST"])
+def api_host_update():
+    if not is_desktop_host():
+        return host_forbidden()
+    if request.method == "GET":
+        return jsonify(UPDATE_SERVICE.status.as_dict())
+    result = UPDATE_SERVICE.apply_update()
+    if not result.get("success"):
+        return jsonify(result), 400
+    return jsonify(result)
+
+
 @app.route("/browse")
 def browse():
     return render_template("browse.html", files=list_folder_files(PUBLIC_FOLDER), is_desktop=False)
@@ -393,11 +425,13 @@ if __name__ == "__main__":
     import webview
 
     configure_windows_app_identity()
+    UPDATE_SERVICE.start_background_check()
 
     t = threading.Thread(target=start_server, daemon=True)
     t.start()
 
     print("--- Servidor Iniciado ---")
+    print(f"Versao: {APP_VERSION}")
     print(f"IP Local: {LOCAL_IP}")
     print(f"Pasta Publica: {PUBLIC_FOLDER}")
     print(f"Pasta Recebidos: {UPLOAD_FOLDER}")

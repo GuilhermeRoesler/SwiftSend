@@ -8,6 +8,8 @@ import PyInstaller.__main__
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parent
 SHARED = REPO / "shared"
+SCRIPTS = REPO / "scripts"
+VERSION_FILE = REPO / "VERSION"
 
 
 def binary_name() -> str:
@@ -35,7 +37,11 @@ def build() -> Path:
 
     # PyInstaller --add-data: Windows usa ; , Unix usa :
     sep = ";" if sys.platform == "win32" else ":"
-    add_data = f"{SHARED}{sep}shared"
+    datas = [f"{SHARED}{sep}shared"]
+    if SCRIPTS.is_dir():
+        datas.append(f"{SCRIPTS}{sep}scripts")
+    if VERSION_FILE.is_file():
+        datas.append(f"{VERSION_FILE}{sep}.")
 
     args = [
         str(ROOT / "main.py"),
@@ -46,10 +52,11 @@ def build() -> Path:
         f"--distpath={ROOT / 'dist'}",
         f"--workpath={ROOT / 'build'}",
         f"--specpath={ROOT}",
-        f"--add-data={add_data}",
         # Garante backends nativos do pywebview por SO (Win/macOS/Linux).
         "--collect-all=webview",
     ]
+    for item in datas:
+        args.append(f"--add-data={item}")
 
     # --windowed no macOS cria .app; preferimos binário simples em dist/ em todos os SOs.
     if sys.platform == "win32":
