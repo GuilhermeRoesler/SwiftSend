@@ -1,6 +1,4 @@
-using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -28,22 +26,16 @@ internal sealed class WebServerOptions
 
 internal static class WebServer
 {
-    /// <summary>Visitante pode remover o próprio envio por este tempo (token em memória).</summary>
-    private const int UploadManageSeconds = 600;
-
-    private static Action<string> _openFolder = DefaultOpenFolder;
+    private static Action<string> _openFolder = FileSystemUtil.DefaultOpenFolder;
     private static UpdateService? _updates;
-    private static readonly ConcurrentDictionary<string, UploadReceipt> UploadTokens = new();
 
     public static UpdateService Updates =>
         _updates ??= new UpdateService(AppPaths.AppVersion, AppPaths.ScriptsDir);
 
-    private sealed record UploadReceipt(string Name, DateTimeOffset ExpiresAt);
-
     public static WebApplication Build(WebServerOptions? options = null)
     {
         options ??= WebServerOptions.Default;
-        _openFolder = options.OpenFolder ?? DefaultOpenFolder;
+        _openFolder = options.OpenFolder ?? FileSystemUtil.DefaultOpenFolder;
         _updates ??= new UpdateService(AppPaths.AppVersion, AppPaths.ScriptsDir);
 
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions
@@ -121,7 +113,7 @@ internal static class WebServer
                 eyebrow_icon = "inbox",
                 page_sub = "Arquivos enviados pelos visitantes — apague ou renomeie se pedirem correção, ou adicione aqui.",
                 empty_hint = "Nada recebido ainda. Visitantes enviam pela página Enviar, ou arraste arquivos acima.",
-                files = ListFolderFiles(AppPaths.UploadFolder),
+                files = FileSystemUtil.ListFolderFiles(AppPaths.UploadFolder),
                 is_desktop = true,
             });
             return Results.Content(html, "text/html; charset=utf-8");
@@ -140,7 +132,7 @@ internal static class WebServer
                 eyebrow_icon = "folder_shared",
                 page_sub = "O que os visitantes veem em Baixar — gerencie sem sair do app.",
                 empty_hint = "Nada público ainda. Arraste arquivos acima para disponibilizar na rede.",
-                files = ListFolderFiles(AppPaths.PublicFolder),
+                files = FileSystemUtil.ListFolderFiles(AppPaths.PublicFolder),
                 is_desktop = true,
             });
             return Results.Content(html, "text/html; charset=utf-8");
@@ -150,7 +142,7 @@ internal static class WebServer
         {
             var html = await templates.RenderAsync("browse.html", new
             {
-                files = ListFolderFiles(AppPaths.PublicFolder),
+                files = FileSystemUtil.ListFolderFiles(AppPaths.PublicFolder),
                 is_desktop = false,
             });
             return Results.Content(html, "text/html; charset=utf-8");
@@ -172,13 +164,17 @@ internal static class WebServer
             if (uploads.Count == 0)
                 return Results.Json(new { error = "No file part" }, statusCode: 400);
 
-            var replace = WantsReplace(form["replace"].ToString());
+            var replace = FileSystemUtil.WantsReplace(form["replace"].ToString());
             var prepared = new List<(IFormFile File, string Name)>();
             foreach (var file in uploads)
             {
                 if (string.IsNullOrWhiteSpace(file.FileName))
                     continue;
-                prepared.Add((file, SanitizeFileName(file.FileName)));
+                // Mesma regra do Python sanitize_basename: vazio / . / .. → ignora.
+                var safe = FileSystemUtil.TrySanitizeFileName(file.FileName);
+                if (safe is null)
+                    continue;
+                prepared.Add((file, safe));
             }
 
             if (prepared.Count == 0)
@@ -207,25 +203,25 @@ internal static class WebServer
                 var dest = Path.Combine(AppPaths.UploadFolder, name);
                 await using (var stream = File.Create(dest))
                     await file.CopyToAsync(stream);
-                saved.Add(IssueUploadToken(name));
+                saved.Add(UploadTokenStore.Issue(name));
             }
 
             return Results.Json(new
             {
                 success = true,
                 files = saved,
-                manage_seconds = UploadManageSeconds,
+                manage_seconds = UploadTokenStore.ManageSeconds,
             });
         });
 
         app.MapPost("/api/upload/undo", async (HttpRequest request) =>
         {
             var body = await ReadJsonAsync(request);
-            var name = ConsumeUploadToken(GetString(body, "token"));
+            var name = UploadTokenStore.Consume(GetString(body, "token"));
             if (name is null)
                 return Results.Json(new { error = "Token inválido ou expirado" }, statusCode: 404);
 
-            var target = SafePathInFolder(AppPaths.UploadFolder, name);
+            var target = FileSystemUtil.SafePathInFolder(AppPaths.UploadFolder, name);
             if (target is null || !File.Exists(target))
                 return Results.Json(new { error = "Arquivo não encontrado" }, statusCode: 404);
 
@@ -233,8 +229,9 @@ internal static class WebServer
             {
                 File.Delete(target);
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.WriteLine($"Falha ao apagar upload undo: {ex.Message}");
                 return Results.Json(new { error = "Não foi possível apagar" }, statusCode: 400);
             }
 
@@ -255,7 +252,7 @@ internal static class WebServer
             if (!IsDesktopHost(req))
                 return Results.Json(new { error = "Forbidden" }, statusCode: 403);
 
-            var folder = ResolveManagedFolder(req.Query["folder"].ToString());
+            var folder = FileSystemUtil.ResolveManagedFolder(req.Query["folder"].ToString());
             if (folder is null)
                 return Results.Json(new { error = "Pasta inválida" }, statusCode: 400);
 
@@ -269,8 +266,8 @@ internal static class WebServer
                 return Results.Json(new { error = "Forbidden" }, statusCode: 403);
 
             var body = await ReadJsonAsync(req);
-            var folder = ResolveManagedFolder(GetString(body, "folder"));
-            var target = folder is null ? null : SafePathInFolder(folder, GetString(body, "name"));
+            var folder = FileSystemUtil.ResolveManagedFolder(GetString(body, "folder"));
+            var target = folder is null ? null : FileSystemUtil.SafePathInFolder(folder, GetString(body, "name"));
             if (folder is null || target is null)
                 return Results.Json(new { error = "Pedido inválido" }, statusCode: 400);
             if (!File.Exists(target))
@@ -280,8 +277,9 @@ internal static class WebServer
             {
                 File.Delete(target);
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.WriteLine($"Falha ao apagar arquivo host: {ex.Message}");
                 return Results.Json(new { error = "Não foi possível apagar" }, statusCode: 400);
             }
 
@@ -294,15 +292,15 @@ internal static class WebServer
                 return Results.Json(new { error = "Forbidden" }, statusCode: 403);
 
             var body = await ReadJsonAsync(req);
-            var folder = ResolveManagedFolder(GetString(body, "folder"));
-            var src = folder is null ? null : SafePathInFolder(folder, GetString(body, "name"));
-            var newName = TrySanitizeFileName(GetString(body, "new_name"));
+            var folder = FileSystemUtil.ResolveManagedFolder(GetString(body, "folder"));
+            var src = folder is null ? null : FileSystemUtil.SafePathInFolder(folder, GetString(body, "name"));
+            var newName = FileSystemUtil.TrySanitizeFileName(GetString(body, "new_name"));
             if (folder is null || src is null || newName is null)
                 return Results.Json(new { error = "Pedido inválido" }, statusCode: 400);
             if (!File.Exists(src))
                 return Results.Json(new { error = "Arquivo não encontrado" }, statusCode: 404);
 
-            var dest = SafePathInFolder(folder, newName);
+            var dest = FileSystemUtil.SafePathInFolder(folder, newName);
             if (dest is null)
                 return Results.Json(new { error = "Nome inválido" }, statusCode: 400);
             if (File.Exists(dest))
@@ -312,8 +310,9 @@ internal static class WebServer
             {
                 File.Move(src, dest);
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.WriteLine($"Falha ao renomear arquivo host: {ex.Message}");
                 return Results.Json(new { error = "Não foi possível renomear" }, statusCode: 400);
             }
 
@@ -329,7 +328,7 @@ internal static class WebServer
                 return Results.Json(new { error = "No file part" }, statusCode: 400);
 
             var form = await request.ReadFormAsync();
-            var folder = ResolveManagedFolder(form["folder"].ToString());
+            var folder = FileSystemUtil.ResolveManagedFolder(form["folder"].ToString());
             if (folder is null)
                 return Results.Json(new { error = "Pasta inválida" }, statusCode: 400);
 
@@ -343,8 +342,11 @@ internal static class WebServer
                 if (string.IsNullOrWhiteSpace(file.FileName))
                     continue;
 
-                var safe = SanitizeFileName(file.FileName);
-                var dest = UniqueDest(folder, safe);
+                var trySafe = FileSystemUtil.TrySanitizeFileName(file.FileName);
+                if (trySafe is null)
+                    continue;
+
+                var dest = FileSystemUtil.UniqueDest(folder, trySafe);
                 await using var stream = File.Create(dest);
                 await file.CopyToAsync(stream);
                 saved++;
@@ -377,105 +379,6 @@ internal static class WebServer
                || host.Contains("127.0.0.1", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static string? ResolveManagedFolder(string? kind) => kind switch
-    {
-        "received" => AppPaths.UploadFolder,
-        "public" => AppPaths.PublicFolder,
-        _ => null,
-    };
-
-    private static List<FileEntry> ListFolderFiles(string folder)
-    {
-        var files = new List<FileEntry>();
-        if (!Directory.Exists(folder))
-            return files;
-
-        foreach (var path in Directory.GetFiles(folder).OrderBy(Path.GetFileName))
-        {
-            var info = new FileInfo(path);
-            files.Add(new FileEntry
-            {
-                name = info.Name,
-                size = AppPaths.FormatSize(info.Length),
-            });
-        }
-
-        return files;
-    }
-
-    private static string? SafePathInFolder(string folder, string? name)
-    {
-        var safe = TrySanitizeFileName(name ?? "");
-        if (safe is null)
-            return null;
-
-        var folderFull = Path.GetFullPath(folder);
-        var full = Path.GetFullPath(Path.Combine(folderFull, safe));
-        var relative = Path.GetRelativePath(folderFull, full);
-        if (relative.StartsWith("..", StringComparison.Ordinal) || Path.IsPathRooted(relative))
-            return null;
-
-        return full;
-    }
-
-    private static string UniqueDest(string folder, string filename)
-    {
-        var dest = Path.Combine(folder, filename);
-        if (!File.Exists(dest))
-            return dest;
-
-        var stem = Path.GetFileNameWithoutExtension(filename);
-        var ext = Path.GetExtension(filename);
-        for (var n = 2; ; n++)
-        {
-            var candidate = Path.Combine(folder, $"{stem}-{n}{ext}");
-            if (!File.Exists(candidate))
-                return candidate;
-        }
-    }
-
-    private static bool WantsReplace(string? value)
-    {
-        var raw = (value ?? "").Trim().ToLowerInvariant();
-        return raw is "1" or "true" or "yes" or "on";
-    }
-
-    private static void PurgeExpiredUploadTokens()
-    {
-        var now = DateTimeOffset.UtcNow;
-        foreach (var pair in UploadTokens)
-        {
-            if (pair.Value.ExpiresAt <= now)
-                UploadTokens.TryRemove(pair.Key, out _);
-        }
-    }
-
-    private static object IssueUploadToken(string name)
-    {
-        PurgeExpiredUploadTokens();
-        foreach (var pair in UploadTokens)
-        {
-            if (string.Equals(pair.Value.Name, name, StringComparison.Ordinal))
-                UploadTokens.TryRemove(pair.Key, out _);
-        }
-
-        var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(24))
-            .TrimEnd('=')
-            .Replace('+', '-')
-            .Replace('/', '_');
-        UploadTokens[token] = new UploadReceipt(name, DateTimeOffset.UtcNow.AddSeconds(UploadManageSeconds));
-        return new { name, token, expires_in = UploadManageSeconds };
-    }
-
-    private static string? ConsumeUploadToken(string token)
-    {
-        if (string.IsNullOrWhiteSpace(token))
-            return null;
-
-        PurgeExpiredUploadTokens();
-        return UploadTokens.TryRemove(token, out var receipt) ? receipt.Name : null;
-    }
-
     private static async Task<JsonElement> ReadJsonAsync(HttpRequest req)
     {
         try
@@ -483,8 +386,9 @@ internal static class WebServer
             using var doc = await JsonDocument.ParseAsync(req.Body);
             return doc.RootElement.Clone();
         }
-        catch
+        catch (Exception ex)
         {
+            Debug.WriteLine($"JSON inválido na request: {ex.Message}");
             return default;
         }
     }
@@ -496,31 +400,5 @@ internal static class WebServer
         return body.TryGetProperty(name, out var prop) && prop.ValueKind == JsonValueKind.String
             ? prop.GetString() ?? ""
             : "";
-    }
-
-    private static void DefaultOpenFolder(string path)
-    {
-        Directory.CreateDirectory(path);
-        Process.Start(new ProcessStartInfo
-        {
-            FileName = "explorer.exe",
-            Arguments = $"\"{path}\"",
-            UseShellExecute = true,
-        });
-    }
-
-    private static string? TrySanitizeFileName(string name)
-    {
-        var file = Path.GetFileName(name).Trim();
-        if (string.IsNullOrWhiteSpace(file) || file is "." or "..")
-            return null;
-        foreach (var c in Path.GetInvalidFileNameChars())
-            file = file.Replace(c, '_');
-        return string.IsNullOrWhiteSpace(file) ? null : file;
-    }
-
-    private static string SanitizeFileName(string name)
-    {
-        return TrySanitizeFileName(name) ?? "arquivo";
     }
 }

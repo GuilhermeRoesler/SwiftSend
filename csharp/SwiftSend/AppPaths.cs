@@ -111,9 +111,9 @@ internal static class AppPaths
             if (socket.LocalEndPoint is System.Net.IPEndPoint ep)
                 return ep.Address.ToString();
         }
-        catch
+        catch (Exception ex)
         {
-            // ignore
+            System.Diagnostics.Debug.WriteLine($"Falha ao detectar IP LAN: {ex.Message}");
         }
 
         return "127.0.0.1";

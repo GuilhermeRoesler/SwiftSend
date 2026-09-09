@@ -19,10 +19,12 @@
 
 ### Sanitização de nome
 
-| Stack | Comportamento |
-|-------|----------------|
-| Python | `werkzeug.utils.secure_filename` |
-| C# | Remove caracteres inválidos do SO; fallback `"arquivo"` |
+Mesma regra nas duas stacks (`fsutil.sanitize_basename` / `FileSystemUtil.TrySanitizeFileName`):
+
+- Usa só o basename (sem path).
+- Rejeita vazio, `.` e `..`.
+- Substitui caracteres inválidos de nome (`<>:"/\\|?*` e NUL; no C# também `Path.GetInvalidFileNameChars`) por `_`.
+- Visitante e host usam a mesma sanitização; upload host com colisão gera `nome-2.ext`.
 
 ## GET `/download/<filename>`
 
@@ -35,7 +37,7 @@
 |------|----------------|
 | `GET /upload_manager` | Host (localhost): renderiza `manager.html` (Recebidos). LAN: redirect `/`. |
 | `GET /public_manager` | Host: `manager.html` (Públicos). LAN: redirect `/`. |
-| `GET /api/host/open?folder=received\|public` | Host: abre pasta no SO (Python `startfile`/`open`/`xdg-open`; C# `explorer`). JSON `{success:true}`. |
+| `GET /api/host/open?folder=received\|public` | Host: abre pasta no SO (Python `startfile` / `subprocess` `open`|`xdg-open`; C# `Process.Start` com shell). JSON `{success:true}`. |
 | `POST /api/host/delete` | Host: `{ "folder", "name" }` — apaga arquivo sob a pasta gerenciada. |
 | `POST /api/host/rename` | Host: `{ "folder", "name", "new_name" }` — 409 se destino existe. |
 | `POST /api/host/upload` | Host: multipart `file` + form `folder` — grava com nome sanitizado; colisão → `nome-2.ext`. Pasta na UI → um `.zip` (compactação no cliente). |
