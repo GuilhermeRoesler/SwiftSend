@@ -32,7 +32,7 @@
                     Envio
                 </p>
                 <h1 class="page-title">Enviar arquivos</h1>
-                <p class="page-sub">Arraste arquivos ou uma pasta. Pastas viram ZIP antes do envio.</p>
+                <p class="page-sub">Arraste arquivos ou uma pasta. Pastas viram ZIP antes do envio. Se o nome já existir, você pode substituir.</p>
             </div>
 
             <form id="uploadForm" action="/api/upload" method="post" enctype="multipart/form-data" class="upload-form">
@@ -82,7 +82,18 @@
                     <span class="material-symbols-outlined text-4xl" aria-hidden="true">check_circle</span>
                     <strong>Envio concluído</strong>
                     <span>Os arquivos chegaram na pasta Recebidos do host.</span>
+                    <ul id="successFileList" class="upload-receipt-list" hidden></ul>
+                    <p id="successManageHint" class="upload-manage-hint" hidden></p>
+                    <p class="upload-host-hint">Depois da janela de desfazer, só o host pode apagar ou renomear em Recebidos.</p>
+                    <div class="upload-success-actions">
+                        <button type="button" class="btn-secondary" id="sendAnotherBtn">
+                            <span class="material-symbols-outlined" aria-hidden="true">add</span>
+                            Enviar outro
+                        </button>
+                    </div>
                 </div>
+
+                <input type="file" id="replaceInput" class="sr-only" tabindex="-1" aria-hidden="true">
 
                 <button type="submit" id="submitBtn" class="btn-primary w-full">
                     <span class="material-symbols-outlined" aria-hidden="true">send</span>

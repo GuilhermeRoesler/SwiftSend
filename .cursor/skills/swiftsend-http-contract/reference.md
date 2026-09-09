@@ -2,12 +2,20 @@
 
 ## POST `/api/upload`
 
-- Campo multipart: `file` (um ou vários).
+- Campo multipart: `file` (um ou vários); opcional `replace` = `1` / `true` / `yes` / `on`.
 - Destino: `{DATA_ROOT}/arquivos_recebidos/`.
-- Nome no disco: nome sanitizado; se já existir → `nome-2.ext`, `nome-3.ext`, …
-- Sucesso: JSON `{ "success": true }` (HTTP 200).
+- Nome no disco: nome sanitizado. Se já existir **e** `replace` ausente → **409** `{ "error", "exists": true, "names": [...] }` sem gravar.
+- Com `replace` (ou nome novo): grava/sobrescreve no nome sanitizado (não gera `nome-2` no upload de visitante).
+- Sucesso: JSON `{ "success": true, "files": [{ "name", "token", "expires_in" }], "manage_seconds": 600 }` (HTTP 200).
+- Cada `token` permite `POST /api/upload/undo` por ~10 minutos (memória do processo; reinício do app invalida).
 - Erro (sem arquivo / falha): HTTP 400 + JSON de erro.
 - **Pasta inteira (UI):** o cliente compacta a pasta em um `.zip` no navegador (`fflate`) e envia como um único `file`. Sem rota nova; estrutura de pastas fica dentro do ZIP.
+
+## POST `/api/upload/undo`
+
+- JSON `{ "token": "..." }` (visitante na LAN ok; sem auth).
+- Se token válido e arquivo ainda existe com aquele nome → apaga e `{ "success": true, "name" }`.
+- Token inválido/expirado/já usado → 404.
 
 ### Sanitização de nome
 
@@ -58,7 +66,9 @@ HTML deve permanecer compatível com **ambos** (`{% %}` / `{{ }}` usados hoje).
 
 - [ ] Dashboard em localhost mostra IP e link
 - [ ] Acesso via IP LAN mostra home (não dashboard)
-- [ ] Upload grava em `arquivos_recebidos`
+- [ ] Upload grava em `arquivos_recebidos`; colisão sem `replace` → 409; com `replace` sobrescreve
+- [ ] Pós-upload: `files[].token` + `/api/upload/undo` remove dentro da janela (~10 min)
+- [ ] Host em Recebidos continua podendo apagar/renomear (correção pedida pelo visitante)
 - [ ] Arquivo em `arquivos_publicos` lista e baixa
 - [ ] Limite 16 GB alinhado (Flask + Kestrel MultipartBodyLengthLimit)
 - [ ] Abrir pastas no host (Windows) via “Abrir no SO” nas telas manager

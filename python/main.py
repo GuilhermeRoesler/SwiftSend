@@ -1,14 +1,21 @@
 import logging
 import os
+import secrets
 import socket
 import sys
 import threading
+import time
 from pathlib import Path
 
 from flask import Flask, jsonify, redirect, render_template, request, send_from_directory, url_for
 from werkzeug.utils import secure_filename
 
 from update_service import UpdateService, read_version
+
+# Visitante pode remover/substituir o próprio envio por este tempo (token em memória).
+UPLOAD_MANAGE_SECONDS = 600
+_upload_tokens: dict[str, dict[str, object]] = {}
+_upload_tokens_lock = threading.Lock()
 
 
 def _windows_documents_dir() -> Path:
@@ -227,6 +234,41 @@ def unique_dest(folder: Path, filename: str) -> Path:
         n += 1
 
 
+def _purge_expired_upload_tokens(now: float | None = None) -> None:
+    ts = time.time() if now is None else now
+    expired = [token for token, meta in _upload_tokens.items() if float(meta["expires"]) <= ts]
+    for token in expired:
+        del _upload_tokens[token]
+
+
+def issue_upload_token(name: str) -> dict[str, object]:
+    token = secrets.token_urlsafe(24)
+    expires = time.time() + UPLOAD_MANAGE_SECONDS
+    with _upload_tokens_lock:
+        _purge_expired_upload_tokens()
+        stale = [t for t, meta in _upload_tokens.items() if meta["name"] == name]
+        for t in stale:
+            del _upload_tokens[t]
+        _upload_tokens[token] = {"name": name, "expires": expires}
+    return {"name": name, "token": token, "expires_in": UPLOAD_MANAGE_SECONDS}
+
+
+def consume_upload_token(token: str) -> str | None:
+    if not token:
+        return None
+    with _upload_tokens_lock:
+        _purge_expired_upload_tokens()
+        meta = _upload_tokens.pop(token, None)
+    if meta is None:
+        return None
+    return str(meta["name"])
+
+
+def wants_replace(form_value: str | None = None) -> bool:
+    raw = (form_value if form_value is not None else request.form.get("replace") or "").strip().lower()
+    return raw in ("1", "true", "yes", "on")
+
+
 def list_folder_files(folder: Path) -> list[dict[str, str]]:
     files_data: list[dict[str, str]] = []
     if not folder.exists():
@@ -269,7 +311,7 @@ def upload_manager():
         page_title="Recebidos",
         eyebrow="Host",
         eyebrow_icon="inbox",
-        page_sub="Arquivos enviados pelos visitantes — apague, renomeie ou adicione aqui.",
+        page_sub="Arquivos enviados pelos visitantes — apague ou renomeie se pedirem correção, ou adicione aqui.",
         empty_hint="Nada recebido ainda. Visitantes enviam pela página Enviar, ou arraste arquivos acima.",
         files=list_folder_files(UPLOAD_FOLDER),
         is_desktop=True,
@@ -400,16 +442,64 @@ def upload_file():
     if "file" not in request.files:
         return jsonify({"error": "No file part"}), 400
 
+    replace = wants_replace()
+    prepared: list[tuple[object, str]] = []
     for file in request.files.getlist("file"):
         if not file.filename:
             continue
         filename = secure_filename(file.filename)
         if not filename:
             continue
-        dest = unique_dest(UPLOAD_FOLDER, filename)
-        file.save(str(dest))
+        prepared.append((file, filename))
 
-    return jsonify({"success": True}), 200
+    if not prepared:
+        return jsonify({"error": "No file part"}), 400
+
+    collisions = sorted({name for _, name in prepared if (UPLOAD_FOLDER / name).exists()})
+    if collisions and not replace:
+        return (
+            jsonify(
+                {
+                    "error": "Arquivo já existe",
+                    "exists": True,
+                    "names": collisions,
+                }
+            ),
+            409,
+        )
+
+    saved: list[dict[str, object]] = []
+    for file, filename in prepared:
+        dest = UPLOAD_FOLDER / filename
+        file.save(str(dest))
+        saved.append(issue_upload_token(filename))
+
+    return (
+        jsonify(
+            {
+                "success": True,
+                "files": saved,
+                "manage_seconds": UPLOAD_MANAGE_SECONDS,
+            }
+        ),
+        200,
+    )
+
+
+@app.route("/api/upload/undo", methods=["POST"])
+def upload_undo():
+    data = request.get_json(silent=True) or {}
+    name = consume_upload_token(str(data.get("token") or ""))
+    if not name:
+        return jsonify({"error": "Token inválido ou expirado"}), 404
+    target = safe_path_in_folder(UPLOAD_FOLDER, name)
+    if target is None or not target.is_file():
+        return jsonify({"error": "Arquivo não encontrado"}), 404
+    try:
+        target.unlink()
+    except OSError:
+        return jsonify({"error": "Não foi possível apagar"}), 400
+    return jsonify({"success": True, "name": name})
 
 
 @app.route("/download/<path:filename>")

@@ -27,7 +27,8 @@ Python (Flask) e C# (Kestrel) devem expor o **mesmo** contrato. Mudança numa st
 | GET | `/` | `Host` contém `localhost` ou `127.0.0.1` → dashboard; senão → home pública |
 | GET | `/browse` | Lista `arquivos_publicos/` |
 | GET | `/upload` | Página de envio |
-| POST | `/api/upload` | Multipart `file` → `arquivos_recebidos/` (colisão → `nome-2.ext`); JSON `{success:true}` ou 400 |
+| POST | `/api/upload` | Multipart `file` → `arquivos_recebidos/`; colisão sem `replace` → **409** `{exists,names}`; com `replace=1` sobrescreve. Sucesso: `{success,files[{name,token,expires_in}],manage_seconds}` |
+| POST | `/api/upload/undo` | JSON `{token}` — remove o envio recente (token em memória, ~10 min); LAN ok |
 | GET | `/download/<filename>` | Attachment de `arquivos_publicos/` |
 | GET | `/upload_manager` | **Host only**: tela Recebidos (espelha a pasta); LAN → redirect `/` |
 | GET | `/public_manager` | **Host only**: tela Públicos; LAN → redirect `/` |

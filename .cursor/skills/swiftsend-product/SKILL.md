@@ -19,6 +19,7 @@ App desktop híbrido: o host sobe um servidor HTTP na rede local; a UI web serve
 3. Host coloca arquivos em `arquivos_publicos/` (ou via tela **Públicos** no dashboard; pastas viram ZIP na UI).
 4. Visitantes na mesma rede abrem o link → home pública → baixar (`/browse`) ou enviar (`/upload`; pastas também viram ZIP).
 5. Uploads gravam em `arquivos_recebidos/` (host vê/gerencia na tela **Recebidos**).
+6. Após enviar, o visitante tem ~10 min para **remover** ou **substituir** esse envio (token efêmero). Depois, só o host corrige em Recebidos. Reenvio com o mesmo nome pergunta se deve substituir.
 
 ## Direção dos arquivos
 

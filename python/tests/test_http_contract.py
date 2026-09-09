@@ -43,7 +43,13 @@ def test_api_upload_keeps_original_name(client, folders):
     data = {"file": (BytesIO(b"payload"), "nota.txt")}
     response = client.post("/api/upload", data=data, content_type="multipart/form-data")
     assert response.status_code == 200
-    assert response.get_json() == {"success": True}
+    body = response.get_json()
+    assert body["success"] is True
+    assert body["manage_seconds"] == 600
+    assert len(body["files"]) == 1
+    assert body["files"][0]["name"] == "nota.txt"
+    assert body["files"][0]["token"]
+    assert body["files"][0]["expires_in"] == 600
 
     saved = list(upload.iterdir())
     assert len(saved) == 1
@@ -51,20 +57,52 @@ def test_api_upload_keeps_original_name(client, folders):
     assert saved[0].read_bytes() == b"payload"
 
 
-def test_api_upload_collision_suffix(client, folders):
+def test_api_upload_collision_requires_replace(client, folders):
     upload, _public = folders
     data = {"file": (BytesIO(b"one"), "nota.txt")}
     assert client.post("/api/upload", data=data, content_type="multipart/form-data").status_code == 200
-    data2 = {"file": (BytesIO(b"two"), "nota.txt")}
-    assert client.post("/api/upload", data=data2, content_type="multipart/form-data").status_code == 200
-    data3 = {"file": (BytesIO(b"three"), "nota.txt")}
-    assert client.post("/api/upload", data=data3, content_type="multipart/form-data").status_code == 200
 
-    names = sorted(p.name for p in upload.iterdir())
-    assert names == ["nota-2.txt", "nota-3.txt", "nota.txt"]
+    data2 = {"file": (BytesIO(b"two"), "nota.txt")}
+    conflict = client.post("/api/upload", data=data2, content_type="multipart/form-data")
+    assert conflict.status_code == 409
+    body = conflict.get_json()
+    assert body["exists"] is True
+    assert body["names"] == ["nota.txt"]
     assert (upload / "nota.txt").read_bytes() == b"one"
-    assert (upload / "nota-2.txt").read_bytes() == b"two"
-    assert (upload / "nota-3.txt").read_bytes() == b"three"
+
+
+def test_api_upload_replace_overwrites(client, folders):
+    upload, _public = folders
+    data = {"file": (BytesIO(b"one"), "nota.txt")}
+    assert client.post("/api/upload", data=data, content_type="multipart/form-data").status_code == 200
+
+    data2 = {"file": (BytesIO(b"two"), "nota.txt"), "replace": "1"}
+    replaced = client.post("/api/upload", data=data2, content_type="multipart/form-data")
+    assert replaced.status_code == 200
+    names = sorted(p.name for p in upload.iterdir())
+    assert names == ["nota.txt"]
+    assert (upload / "nota.txt").read_bytes() == b"two"
+
+
+def test_api_upload_undo_with_token(client, folders):
+    upload, _public = folders
+    data = {"file": (BytesIO(b"payload"), "temp.txt")}
+    response = client.post("/api/upload", data=data, content_type="multipart/form-data")
+    token = response.get_json()["files"][0]["token"]
+    assert (upload / "temp.txt").is_file()
+
+    undone = client.post("/api/upload/undo", json={"token": token})
+    assert undone.status_code == 200
+    assert undone.get_json() == {"success": True, "name": "temp.txt"}
+    assert not (upload / "temp.txt").exists()
+
+    again = client.post("/api/upload/undo", json={"token": token})
+    assert again.status_code == 404
+
+
+def test_api_upload_undo_invalid_token(client):
+    response = client.post("/api/upload/undo", json={"token": "nope"})
+    assert response.status_code == 404
 
 
 def test_api_upload_multiple_files(client, folders):
@@ -77,7 +115,9 @@ def test_api_upload_multiple_files(client, folders):
     }
     response = client.post("/api/upload", data=data, content_type="multipart/form-data")
     assert response.status_code == 200
-    assert response.get_json() == {"success": True}
+    body = response.get_json()
+    assert body["success"] is True
+    assert len(body["files"]) == 2
     assert len(list(upload.iterdir())) == 2
 
 

@@ -1,4 +1,6 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -26,11 +28,17 @@ internal sealed class WebServerOptions
 
 internal static class WebServer
 {
+    /// <summary>Visitante pode remover o próprio envio por este tempo (token em memória).</summary>
+    private const int UploadManageSeconds = 600;
+
     private static Action<string> _openFolder = DefaultOpenFolder;
     private static UpdateService? _updates;
+    private static readonly ConcurrentDictionary<string, UploadReceipt> UploadTokens = new();
 
     public static UpdateService Updates =>
         _updates ??= new UpdateService(AppPaths.AppVersion, AppPaths.ScriptsDir);
+
+    private sealed record UploadReceipt(string Name, DateTimeOffset ExpiresAt);
 
     public static WebApplication Build(WebServerOptions? options = null)
     {
@@ -111,7 +119,7 @@ internal static class WebServer
                 page_title = "Recebidos",
                 eyebrow = "Host",
                 eyebrow_icon = "inbox",
-                page_sub = "Arquivos enviados pelos visitantes — apague, renomeie ou adicione aqui.",
+                page_sub = "Arquivos enviados pelos visitantes — apague ou renomeie se pedirem correção, ou adicione aqui.",
                 empty_hint = "Nada recebido ainda. Visitantes enviam pela página Enviar, ou arraste arquivos acima.",
                 files = ListFolderFiles(AppPaths.UploadFolder),
                 is_desktop = true,
@@ -164,18 +172,73 @@ internal static class WebServer
             if (uploads.Count == 0)
                 return Results.Json(new { error = "No file part" }, statusCode: 400);
 
+            var replace = WantsReplace(form["replace"].ToString());
+            var prepared = new List<(IFormFile File, string Name)>();
             foreach (var file in uploads)
             {
                 if (string.IsNullOrWhiteSpace(file.FileName))
                     continue;
-
-                var safe = SanitizeFileName(file.FileName);
-                var dest = UniqueDest(AppPaths.UploadFolder, safe);
-                await using var stream = File.Create(dest);
-                await file.CopyToAsync(stream);
+                prepared.Add((file, SanitizeFileName(file.FileName)));
             }
 
-            return Results.Json(new { success = true });
+            if (prepared.Count == 0)
+                return Results.Json(new { error = "No file part" }, statusCode: 400);
+
+            var collisions = prepared
+                .Select(p => p.Name)
+                .Where(name => File.Exists(Path.Combine(AppPaths.UploadFolder, name)))
+                .Distinct(StringComparer.Ordinal)
+                .OrderBy(n => n, StringComparer.Ordinal)
+                .ToArray();
+            if (collisions.Length > 0 && !replace)
+            {
+                return Results.Json(new
+                {
+                    error = "Arquivo já existe",
+                    exists = true,
+                    names = collisions,
+                }, statusCode: 409);
+            }
+
+            Directory.CreateDirectory(AppPaths.UploadFolder);
+            var saved = new List<object>();
+            foreach (var (file, name) in prepared)
+            {
+                var dest = Path.Combine(AppPaths.UploadFolder, name);
+                await using (var stream = File.Create(dest))
+                    await file.CopyToAsync(stream);
+                saved.Add(IssueUploadToken(name));
+            }
+
+            return Results.Json(new
+            {
+                success = true,
+                files = saved,
+                manage_seconds = UploadManageSeconds,
+            });
+        });
+
+        app.MapPost("/api/upload/undo", async (HttpRequest request) =>
+        {
+            var body = await ReadJsonAsync(request);
+            var name = ConsumeUploadToken(GetString(body, "token"));
+            if (name is null)
+                return Results.Json(new { error = "Token inválido ou expirado" }, statusCode: 404);
+
+            var target = SafePathInFolder(AppPaths.UploadFolder, name);
+            if (target is null || !File.Exists(target))
+                return Results.Json(new { error = "Arquivo não encontrado" }, statusCode: 404);
+
+            try
+            {
+                File.Delete(target);
+            }
+            catch
+            {
+                return Results.Json(new { error = "Não foi possível apagar" }, statusCode: 400);
+            }
+
+            return Results.Json(new { success = true, name });
         });
 
         app.MapGet("/download/{*filename}", (string filename) =>
@@ -369,6 +432,48 @@ internal static class WebServer
             if (!File.Exists(candidate))
                 return candidate;
         }
+    }
+
+    private static bool WantsReplace(string? value)
+    {
+        var raw = (value ?? "").Trim().ToLowerInvariant();
+        return raw is "1" or "true" or "yes" or "on";
+    }
+
+    private static void PurgeExpiredUploadTokens()
+    {
+        var now = DateTimeOffset.UtcNow;
+        foreach (var pair in UploadTokens)
+        {
+            if (pair.Value.ExpiresAt <= now)
+                UploadTokens.TryRemove(pair.Key, out _);
+        }
+    }
+
+    private static object IssueUploadToken(string name)
+    {
+        PurgeExpiredUploadTokens();
+        foreach (var pair in UploadTokens)
+        {
+            if (string.Equals(pair.Value.Name, name, StringComparison.Ordinal))
+                UploadTokens.TryRemove(pair.Key, out _);
+        }
+
+        var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(24))
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
+        UploadTokens[token] = new UploadReceipt(name, DateTimeOffset.UtcNow.AddSeconds(UploadManageSeconds));
+        return new { name, token, expires_in = UploadManageSeconds };
+    }
+
+    private static string? ConsumeUploadToken(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            return null;
+
+        PurgeExpiredUploadTokens();
+        return UploadTokens.TryRemove(token, out var receipt) ? receipt.Name : null;
     }
 
     private static async Task<JsonElement> ReadJsonAsync(HttpRequest req)

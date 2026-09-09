@@ -16,10 +16,17 @@
   const submitBtn = document.getElementById("submitBtn");
   const dropZone = document.getElementById("dropZone");
   const successPanel = document.getElementById("successPanel");
+  const successFileList = document.getElementById("successFileList");
+  const successManageHint = document.getElementById("successManageHint");
+  const sendAnotherBtn = document.getElementById("sendAnotherBtn");
+  const replaceInput = document.getElementById("replaceInput");
 
   if (!fileInput || !form) return;
 
   var pendingFolder = null;
+  var manageTimer = null;
+  var manageDeadline = 0;
+  var pendingReplaceTarget = null;
 
   function formatBytes(bytes) {
     if (!bytes || bytes < 0) return "0 B";
@@ -39,6 +46,15 @@
     if (seconds < 60) return Math.round(seconds) + "s";
     var m = Math.floor(seconds / 60);
     var s = Math.round(seconds % 60);
+    return m + "m " + s + "s";
+  }
+
+  function formatRemain(seconds) {
+    if (seconds <= 0) return "0s";
+    if (seconds < 60) return Math.round(seconds) + "s";
+    var m = Math.floor(seconds / 60);
+    var s = Math.round(seconds % 60);
+    if (s === 0) return m + " min";
     return m + "m " + s + "s";
   }
 
@@ -103,6 +119,161 @@
     } else {
       fileList.classList.add("hidden");
     }
+  }
+
+  function stopManageTimer() {
+    if (manageTimer) {
+      clearInterval(manageTimer);
+      manageTimer = null;
+    }
+    manageDeadline = 0;
+  }
+
+  function clearManageUi() {
+    stopManageTimer();
+    if (successFileList) {
+      successFileList.innerHTML = "";
+      successFileList.hidden = true;
+    }
+    if (successManageHint) {
+      successManageHint.textContent = "";
+      successManageHint.hidden = true;
+    }
+  }
+
+  function updateManageHint() {
+    if (!successManageHint || !manageDeadline) return;
+    var remain = Math.max(0, Math.round((manageDeadline - Date.now()) / 1000));
+    if (remain <= 0) {
+      successManageHint.textContent = "Janela de desfazer encerrada. Peça ao host se precisar corrigir.";
+      if (successFileList) {
+        var buttons = successFileList.querySelectorAll("button");
+        for (var i = 0; i < buttons.length; i++) buttons[i].disabled = true;
+      }
+      stopManageTimer();
+      return;
+    }
+    successManageHint.hidden = false;
+    successManageHint.textContent =
+      "Você pode remover ou substituir estes envios por mais " + formatRemain(remain) + ".";
+  }
+
+  function renderReceipt(files, manageSeconds) {
+    clearManageUi();
+    if (!successFileList || !files || !files.length) return;
+
+    successFileList.hidden = false;
+    for (var i = 0; i < files.length; i++) {
+      (function (item) {
+        var li = document.createElement("li");
+        li.className = "upload-receipt-item";
+        li.dataset.token = item.token || "";
+        li.dataset.name = item.name || "";
+
+        var nameEl = document.createElement("span");
+        nameEl.className = "upload-receipt-name";
+        nameEl.textContent = item.name || "arquivo";
+
+        var actions = document.createElement("div");
+        actions.className = "upload-receipt-actions";
+
+        var replaceBtn = document.createElement("button");
+        replaceBtn.type = "button";
+        replaceBtn.className = "btn-ghost upload-receipt-btn";
+        replaceBtn.textContent = "Substituir";
+        replaceBtn.addEventListener("click", function () {
+          if (!item.token || !replaceInput) return;
+          pendingReplaceTarget = { token: item.token, name: item.name, row: li };
+          replaceInput.value = "";
+          replaceInput.click();
+        });
+
+        var undoBtn = document.createElement("button");
+        undoBtn.type = "button";
+        undoBtn.className = "btn-ghost upload-receipt-btn";
+        undoBtn.textContent = "Remover";
+        undoBtn.addEventListener("click", function () {
+          undoUpload(item.token, li, item.name);
+        });
+
+        actions.appendChild(replaceBtn);
+        actions.appendChild(undoBtn);
+        li.appendChild(nameEl);
+        li.appendChild(actions);
+        successFileList.appendChild(li);
+      })(files[i]);
+    }
+
+    var seconds = typeof manageSeconds === "number" && manageSeconds > 0 ? manageSeconds : 600;
+    manageDeadline = Date.now() + seconds * 1000;
+    updateManageHint();
+    manageTimer = setInterval(updateManageHint, 1000);
+  }
+
+  function undoUpload(token, row, name) {
+    if (!token) return;
+    fetch("/api/upload/undo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: token }),
+    })
+      .then(function (res) {
+        return res.json().then(function (data) {
+          return { ok: res.ok, data: data };
+        });
+      })
+      .then(function (result) {
+        if (!result.ok) {
+          window.alert((result.data && result.data.error) || "Não foi possível remover.");
+          return;
+        }
+        if (row && row.parentNode) row.parentNode.removeChild(row);
+        if (successFileList && !successFileList.children.length) {
+          clearManageUi();
+          if (successManageHint) {
+            successManageHint.hidden = false;
+            successManageHint.textContent =
+              (name || "Arquivo") + " removido. Você pode enviar de novo quando quiser.";
+          }
+        }
+      })
+      .catch(function () {
+        window.alert("Erro de rede ao remover.");
+      });
+  }
+
+  function resetForAnother() {
+    clearManageUi();
+    if (successPanel) successPanel.classList.add("hidden");
+    progressContainer.classList.add("hidden");
+    statusText.classList.add("hidden");
+    statusText.classList.remove("text-success", "text-danger");
+    clearFolderPending();
+    fileInput.value = "";
+    fileInput.setAttribute("required", "required");
+    fileList.classList.add("hidden");
+    setBusy(false);
+    submitBtn.classList.remove("hidden");
+  }
+
+  if (sendAnotherBtn) {
+    sendAnotherBtn.addEventListener("click", resetForAnother);
+  }
+
+  if (replaceInput) {
+    replaceInput.addEventListener("change", function () {
+      if (!pendingReplaceTarget || !replaceInput.files || !replaceInput.files.length) {
+        pendingReplaceTarget = null;
+        return;
+      }
+      var target = pendingReplaceTarget;
+      pendingReplaceTarget = null;
+      var file = replaceInput.files[0];
+      var formData = new FormData();
+      formData.append("file", file, target.name || file.name);
+      formData.append("replace", "1");
+      sendFormData(formData, { replace: true });
+    });
   }
 
   fileInput.addEventListener("change", updateFileName);
@@ -182,11 +353,24 @@
     });
   }
 
-  function sendFormData(formData) {
+  function confirmReplace(names) {
+    var list = (names || []).join(", ");
+    return window.confirm(
+      "Já existe no host: " +
+        list +
+        ".\n\nSubstituir o arquivo existente? (Cancelar mantém o original e não envia.)"
+    );
+  }
+
+  function sendFormData(formData, options) {
+    options = options || {};
     const xhr = new XMLHttpRequest();
     var startedAt = Date.now();
     var lastLoaded = 0;
     var lastAt = startedAt;
+    var replace = !!options.replace;
+
+    if (replace) formData.set("replace", "1");
 
     if (successPanel) successPanel.classList.add("hidden");
     progressContainer.classList.remove("hidden");
@@ -195,6 +379,7 @@
     setMeter("0%", "—", "—", "Iniciando envio…");
     progressBar.style.width = "0%";
     setBusy(true);
+    submitBtn.classList.add("hidden");
 
     xhr.upload.onprogress = function (e) {
       if (!e.lengthComputable) return;
@@ -222,25 +407,59 @@
     };
 
     xhr.onload = function () {
+      var payload = null;
+      try {
+        payload = JSON.parse(xhr.responseText || "{}");
+      } catch (_err) {
+        payload = null;
+      }
+
+      if (xhr.status === 409 && payload && payload.exists && !replace) {
+        setBusy(false);
+        submitBtn.classList.remove("hidden");
+        progressContainer.classList.add("hidden");
+        if (confirmReplace(payload.names || [])) {
+          formData.set("replace", "1");
+          sendFormData(formData, { replace: true });
+        } else {
+          statusText.classList.remove("hidden");
+          statusText.textContent = "Envio cancelado — o arquivo original foi mantido.";
+          statusText.classList.add("text-danger");
+        }
+        return;
+      }
+
       if (xhr.status === 200) {
         progressBar.style.width = "100%";
         setMeter("100%", "concluído", "0s", "");
         statusText.classList.add("text-success");
+        statusText.classList.add("hidden");
+        progressContainer.classList.add("hidden");
         if (successPanel) successPanel.classList.remove("hidden");
-        setTimeout(function () {
-          window.location.reload();
-        }, 2200);
+        renderReceipt(
+          payload && payload.files ? payload.files : [],
+          payload && payload.manage_seconds
+        );
+        setBusy(false);
+        clearFolderPending();
+        fileInput.value = "";
+        fileList.classList.add("hidden");
       } else {
-        statusText.textContent = "Erro ao enviar. Tente novamente.";
+        statusText.classList.remove("hidden");
+        statusText.textContent =
+          (payload && payload.error) || "Erro ao enviar. Tente novamente.";
         statusText.classList.add("text-danger");
         setBusy(false);
+        submitBtn.classList.remove("hidden");
       }
     };
 
     xhr.onerror = function () {
+      statusText.classList.remove("hidden");
       statusText.textContent = "Erro de rede ao enviar.";
       statusText.classList.add("text-danger");
       setBusy(false);
+      submitBtn.classList.remove("hidden");
     };
 
     xhr.open("POST", "/api/upload", true);

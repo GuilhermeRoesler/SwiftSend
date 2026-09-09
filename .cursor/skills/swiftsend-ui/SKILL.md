@@ -41,7 +41,7 @@ Demo estática (GitHub Pages): `python demo/build.py` → `demo/dist/` (template
 - Visual: identidade própria (Sora + JetBrains Mono, azul/teal sobre ink), assets **locais** (sem CDN obrigatório).
 - Templates compatíveis com **Jinja2 e Fluid** — não introduzir filtros/tags só de um motor sem equivalente no outro.
 - Identificadores de rotas/API em inglês (`/api/upload`, `/browse`); cópia visível em PT.
-- Upload: `upload.js` + `folder-zip.js` (XHR + progresso + pasta→ZIP) — manter contrato com `POST /api/upload`.
+- Upload: `upload.js` + `folder-zip.js` (XHR + progresso + pasta→ZIP) — contrato `POST /api/upload` (+ `replace`, recibo com token) e `POST /api/upload/undo`.
 
 ## Páginas
 
@@ -50,7 +50,7 @@ Demo estática (GitHub Pages): `python demo/build.py` → `demo/dist/` (template
 | `dashboard.html` | Host | Cockpit: link+QR dominantes, métrica densa, howto compacto se `received_count == 0` |
 | `home.html` | Visitante | Hero de marca (wordmark) + cena LAN + Baixar / Enviar |
 | `browse.html` | Visitante | Lista flat com ícone por tipo + download |
-| `upload.html` | Visitante | Drop zone + pasta→ZIP + transfer meter (%, velocidade, ETA) + sucesso |
+| `upload.html` | Visitante | Drop zone + pasta→ZIP + transfer meter + sucesso com Remover/Substituir (token ~10 min) |
 | `manager.html` | Host | Espelha Recebidos ou Públicos: DnD, pasta→ZIP, renomear, apagar, abrir no SO |
 
 ## Ao editar

@@ -94,9 +94,14 @@ public sealed class HttpContractTests : IAsyncLifetime
         using var content = BuildMultipart(("nota.txt", "payload"u8.ToArray()));
         using var response = await Client.PostAsync("/api/upload", content);
         var json = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Contains("\"success\":true", json.Replace(" ", ""));
+        Assert.True(doc.RootElement.GetProperty("success").GetBoolean());
+        Assert.Equal(600, doc.RootElement.GetProperty("manage_seconds").GetInt32());
+        Assert.Equal(1, doc.RootElement.GetProperty("files").GetArrayLength());
+        Assert.Equal("nota.txt", doc.RootElement.GetProperty("files")[0].GetProperty("name").GetString());
+        Assert.False(string.IsNullOrWhiteSpace(doc.RootElement.GetProperty("files")[0].GetProperty("token").GetString()));
 
         var saved = Directory.GetFiles(AppPaths.UploadFolder);
         Assert.Single(saved);
@@ -105,23 +110,62 @@ public sealed class HttpContractTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ApiUpload_CollisionSuffix()
+    public async Task ApiUpload_CollisionRequiresReplace()
     {
         using (var content = BuildMultipart(("nota.txt", "one"u8.ToArray())))
             Assert.Equal(HttpStatusCode.OK, (await Client.PostAsync("/api/upload", content)).StatusCode);
-        using (var content = BuildMultipart(("nota.txt", "two"u8.ToArray())))
-            Assert.Equal(HttpStatusCode.OK, (await Client.PostAsync("/api/upload", content)).StatusCode);
-        using (var content = BuildMultipart(("nota.txt", "three"u8.ToArray())))
+
+        using var conflictContent = BuildMultipart(("nota.txt", "two"u8.ToArray()));
+        using var conflict = await Client.PostAsync("/api/upload", conflictContent);
+        var json = await conflict.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+
+        Assert.Equal(HttpStatusCode.Conflict, conflict.StatusCode);
+        Assert.True(doc.RootElement.GetProperty("exists").GetBoolean());
+        Assert.Equal("nota.txt", doc.RootElement.GetProperty("names")[0].GetString());
+        Assert.Equal("one"u8.ToArray(), await File.ReadAllBytesAsync(Path.Combine(AppPaths.UploadFolder, "nota.txt")));
+    }
+
+    [Fact]
+    public async Task ApiUpload_ReplaceOverwrites()
+    {
+        using (var content = BuildMultipart(("nota.txt", "one"u8.ToArray())))
             Assert.Equal(HttpStatusCode.OK, (await Client.PostAsync("/api/upload", content)).StatusCode);
 
-        var names = Directory.GetFiles(AppPaths.UploadFolder)
-            .Select(Path.GetFileName)
-            .OrderBy(n => n, StringComparer.Ordinal)
-            .ToArray();
-        Assert.Equal(new[] { "nota-2.txt", "nota-3.txt", "nota.txt" }, names);
-        Assert.Equal("one"u8.ToArray(), await File.ReadAllBytesAsync(Path.Combine(AppPaths.UploadFolder, "nota.txt")));
-        Assert.Equal("two"u8.ToArray(), await File.ReadAllBytesAsync(Path.Combine(AppPaths.UploadFolder, "nota-2.txt")));
-        Assert.Equal("three"u8.ToArray(), await File.ReadAllBytesAsync(Path.Combine(AppPaths.UploadFolder, "nota-3.txt")));
+        using var replaceContent = BuildMultipart(("nota.txt", "two"u8.ToArray()));
+        replaceContent.Add(new StringContent("1"), "replace");
+        using var replaced = await Client.PostAsync("/api/upload", replaceContent);
+
+        Assert.Equal(HttpStatusCode.OK, replaced.StatusCode);
+        Assert.Single(Directory.GetFiles(AppPaths.UploadFolder));
+        Assert.Equal("two"u8.ToArray(), await File.ReadAllBytesAsync(Path.Combine(AppPaths.UploadFolder, "nota.txt")));
+    }
+
+    [Fact]
+    public async Task ApiUpload_UndoWithToken()
+    {
+        using var content = BuildMultipart(("temp.txt", "payload"u8.ToArray()));
+        using var response = await Client.PostAsync("/api/upload", content);
+        var json = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+        var token = doc.RootElement.GetProperty("files")[0].GetProperty("token").GetString();
+
+        Assert.True(File.Exists(Path.Combine(AppPaths.UploadFolder, "temp.txt")));
+
+        using var undoReq = new HttpRequestMessage(HttpMethod.Post, "/api/upload/undo")
+        {
+            Content = JsonContent($"{{\"token\":\"{token}\"}}"),
+        };
+        using var undone = await Client.SendAsync(undoReq);
+        Assert.Equal(HttpStatusCode.OK, undone.StatusCode);
+        Assert.False(File.Exists(Path.Combine(AppPaths.UploadFolder, "temp.txt")));
+
+        using var againReq = new HttpRequestMessage(HttpMethod.Post, "/api/upload/undo")
+        {
+            Content = JsonContent($"{{\"token\":\"{token}\"}}"),
+        };
+        using var again = await Client.SendAsync(againReq);
+        Assert.Equal(HttpStatusCode.NotFound, again.StatusCode);
     }
 
     [Fact]
@@ -131,8 +175,11 @@ public sealed class HttpContractTests : IAsyncLifetime
             ("a.txt", "aa"u8.ToArray()),
             ("b.txt", "bb"u8.ToArray()));
         using var response = await Client.PostAsync("/api/upload", content);
+        var json = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(2, doc.RootElement.GetProperty("files").GetArrayLength());
         Assert.Equal(2, Directory.GetFiles(AppPaths.UploadFolder).Length);
     }
 
